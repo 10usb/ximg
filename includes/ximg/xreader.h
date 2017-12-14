@@ -2,7 +2,7 @@
 #define XREADER_H
 
 /*
- * reader of raster images
+ * Reader of raster images
  */
 
 #include <ximg/ximg.h>

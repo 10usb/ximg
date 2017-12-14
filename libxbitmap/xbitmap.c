@@ -76,7 +76,7 @@ struct ximg * xbitmap_load(const char * filename){
 
     switch(header.bits){
         case 32:{
-            unsigned short raster_index = xras_create(image, header.width, header.height, ximg_make("RGBA"), 4);
+            unsigned int raster_index = xras_create(image, header.width, header.height, ximg_make("RGBA"), 4);
 
             struct xras * raster = xras_get_by_id(image, raster_index);
 
