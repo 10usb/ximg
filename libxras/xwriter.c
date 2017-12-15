@@ -4,26 +4,29 @@
 #include <stdlib.h>
 
 int xwriter_create(struct xwriter * writer, struct ximg * image, unsigned short width, unsigned short height, unsigned int type){
-    reader->image   = image;
-    reader->width   = width;
-    reader->height  = height;
-    reader->type    = type;
+    writer->image   = image;
+    writer->width   = width;
+    writer->height  = height;
+    writer->type    = type;
 
     struct xchu * info = ximg_find(image, ximg_make("XINF"), 0);
     if(info){
         return 0; // not supported yet
     }
+    puts("Creating.......");
+    return 1;
 }
 
 int xwriter_open(struct xwriter * writer, struct ximg * image, unsigned int id){
-    reader->image = image;
+    writer->image = image;
 
 }
 
 int xwriter_copy(struct xwriter * writer, struct xwriter * reader){
-
+    puts("Copying.......");
+    return 0;
 }
 
-void xreader_clear(struct xwriter * writer){
+void xwriter_clear(struct xwriter * writer){
     
 }

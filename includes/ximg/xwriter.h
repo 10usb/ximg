@@ -1,5 +1,5 @@
-#ifndef XREADER_H
-#define XREADER_H
+#ifndef XWRITER_H
+#define XWRITER_H
 
 /*
  * Writer of raster images
@@ -19,5 +19,5 @@ struct xwriter {
 int xwriter_create(struct xwriter * writer, struct ximg * image, unsigned short width, unsigned short height, unsigned int type);
 int xwriter_open(struct xwriter * writer, struct ximg * image, unsigned int id);
 int xwriter_copy(struct xwriter * writer, struct xwriter * reader);
-void xreader_clear(struct xwriter * writer);
+void xwriter_clear(struct xwriter * writer);
 #endif

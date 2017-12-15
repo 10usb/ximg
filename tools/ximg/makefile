@@ -11,7 +11,9 @@ INCLUDES=-I../../includes
 DEPENDANCIES=libximg libxras
 LIBS=$(foreach x, $(DEPENDANCIES), ../../$(x)/$(x).o)
 
-$(TARGET): dependencies $(OBJECTS)
+all: dependencies $(TARGET)
+
+$(TARGET): $(OBJECTS) $(LIBS)
 	$(CC) -Wall -o $@ $(OBJECTS) $(LIBS)
 
 %.o: %.c
@@ -23,6 +25,5 @@ clean:
 dependencies:
 	$(foreach x,$(DEPENDANCIES:%=../../%),$(MAKE) -C $(x);)
 
-all: $(TARGET)
 
 .PHONY: clean all dependencies

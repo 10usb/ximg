@@ -52,7 +52,7 @@ int ximg_extract(int argc, const char ** argv){
     struct ximg * destination = ximg_create();
 
     struct xwriter writer;
-    if(!xwriter_create(&writer, destination, reader.width, , reader.height, type)){
+    if(!xwriter_create(&writer, destination, reader.width, reader.height, type)){
         xreader_clear(&reader);
         ximg_free(source);
         return -7;

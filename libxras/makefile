@@ -1,6 +1,6 @@
 # Library Ximg Raster
 include ../makefile.in
-SOURCES=xras.c xchan.c xreader.c
+SOURCES=xras.c xchan.c xreader.c xwriter.c
 OBJECTS=$(SOURCES:.c=.o)
 TARGET=libxras.o
 INCLUDES=-I../includes

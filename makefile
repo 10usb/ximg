@@ -1,16 +1,15 @@
 # Workspace
-ifeq ($(OS),Windows_NT)
-    XBITMAP=bin/xbitmap.exe
-	XBITMAP_SOURCE=tools/xbitmap/xbitmap.exe
-else
-	XBITMAP=bin/xbitmap
-	XBITMAP_SOURCE=tools/xbitmap/xbitmap
-endif
-TARGETS=$(XBITMAP)
+TOOLS=xbitmap ximg
 LIBS=libxbitmap libximg libxras
-TOOLS=xbitmap
+ifeq ($(OS),Windows_NT)
+    TARGETS=$(TOOLS:%=bin/%.exe)
+	SUFFIX=.exe
+else
+	TARGETS=$(TOOLS:%=bin/%)
+	SUFFIX=
+endif
 
-all: $(TARGETS)
+all: $(LIBS) $(TOOLS)
 
 clean:
 	$(foreach x,$(LIBS),$(MAKE) -C $(x) clean;)
@@ -20,8 +19,11 @@ clean:
 bin:
 	mkdir bin
 
-$(XBITMAP): bin
-	$(MAKE) -C tools/xbitmap
-	cp $(XBITMAP_SOURCE) $(XBITMAP)
+$(LIBS):
+	$(MAKE) -C $@
 
-.PHONY: all clean
+$(TOOLS): bin
+	$(MAKE) -C tools/$@ $@$(SUFFIX)
+	cp tools/$@/$@$(SUFFIX) bin/$@$(SUFFIX)
+
+.PHONY: all clean $(TOOLS) $(LIBS)
