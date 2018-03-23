@@ -22,7 +22,7 @@ int xwriter_open(struct xwriter * writer, struct ximg * image, unsigned int id){
 
 }
 
-int xwriter_copy(struct xwriter * writer, struct xwriter * reader){
+int xwriter_copy(struct xwriter * writer, struct xreader * reader){
     puts("Copying.......");
     return 0;
 }

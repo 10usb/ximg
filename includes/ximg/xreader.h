@@ -8,6 +8,7 @@
 #include <ximg/ximg.h>
 #include <ximg/xras.h>
 #include <ximg/xchan.h>
+#include <ximg/xtypes.h>
 
 struct xreader {
     unsigned short width;
@@ -16,21 +17,6 @@ struct xreader {
     struct xras * raster;
     struct xchan ** channnels;
 };
-
-struct xpixel {
-    unsigned char r;
-    unsigned char g;
-    unsigned char b;
-    unsigned char a;
-} __attribute__((__packed__));
-
-struct xvector {
-    float r;
-    float g;
-    float b;
-    float v;
-    float a;
-} __attribute__((__packed__));
 
 int xreader_init(struct xreader * reader, struct ximg * image, unsigned short index);
 void xreader_clear(struct xreader * reader);

@@ -58,12 +58,18 @@ int ximg_extract(int argc, const char ** argv){
         return -7;
     }
 
+    if(!xwriter_copy(&writer, &reader)){
+        xreader_clear(&reader);
+        ximg_free(source);
+        return -8;
+    }
+
     if(!ximg_save(destination, output)){
         fprintf(stderr, "Failed to save %s\n", output);
         xreader_clear(&reader);
         ximg_free(source);
         ximg_free(destination);
-        return -7;
+        return -9;
     }
 
     xreader_clear(&reader);
