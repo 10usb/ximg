@@ -3,52 +3,8 @@
 #include <string.h>
 #include <ximg/xbitmap.h>
 #include <ximg/xtypes.h>
-
-struct xgif_header {
-  unsigned short width;
-  unsigned short height;
-  union {
-    unsigned char flags;
-    struct {
-        unsigned char hasTable : 1;
-        unsigned char colorResolution : 3;
-        unsigned char sortFlag : 1;
-        unsigned char tableSize : 3;
-    } __attribute__((__packed__));
-  };
-  unsigned char backgroundIndex;
-  unsigned char pixelRatio;
-} __attribute__((__packed__));
-
-struct xgif_image {
-  unsigned short left;
-  unsigned short top;
-  unsigned short width;
-  unsigned short height;
-  union {
-    unsigned char flags;
-    struct {
-        unsigned char hasTable : 1;
-        unsigned char interlaced : 1;
-        unsigned char sortFlag : 1;
-        unsigned char reserved : 2;
-        unsigned char tableSize : 3;
-    } __attribute__((__packed__));
-  };
-} __attribute__((__packed__));
-
-struct lzw_entry {
-  unsigned char * value;
-  int length;
-};
-struct lzw_info {
-  short clear;
-  short stop;
-  short count;
-  struct lzw_entry entries[4096];
-  short lastCode;
-  unsigned char lastRead[2];
-};
+#include <ximg/xgif.h>
+#include <compression/lzw.h>
 
 int main(int argc, const char ** argv){
     FILE * f = fopen("resources/Naamloos.gif", "rb");
@@ -120,5 +76,77 @@ int main(int argc, const char ** argv){
     printf("tableSize      : %d\n", 1 << (image.tableSize + 1));
     printf("reserved       : %d\n", image.reserved);
 
+    printf("-------------------\n");
+
+    
+
+
+    struct lzw_info info;
+    info.count  = 256;
+    info.clear  = 256;
+    info.stop   = 257;
+    lzw_init(&info);
+
+    unsigned char c;
+    int decoded;
+
+    fread(&c, 1, 1, f); // bits?
+    fread(&c, 1, 1, f); // length?
+
+    fread(&c, 1, 1, f);
+    // printf("{%02X}", c);
+
+    unsigned char data[120 + 50];
+
+    int limit = 80;
+    int codes = 0;
+    while(limit-- && lzw_decode(&info, c, &decoded) > 0){
+      if(decoded > 0){
+        // printf(" => ");
+        for(int i = 0; i < decoded; i++){
+          // printf("[%2d]", info.codes[i]);
+          int code = info.codes[i];
+
+          for(int j = 0; j < info.entries[code].length; j++){
+            data[codes++] = info.entries[code].value[j];
+          }
+        }
+        // printf("\n");
+      }
+
+      if(!fread(&c, 1, 1, f)){
+        printf("Failed to read data");
+        lzw_free(&info);
+        fclose(f);
+        return 3;
+      }
+      // printf("{%02X}", c);
+    }
+    
+    printf("\n-------------------\n");
+    printf("codes: %d\n", codes);
+
+    printf("-------------------\n");
+    for(int y = 0; y < 10; y++){
+      for(int x = 0; x < 12; x++){
+          printf("%d ", data[y * 12 + x]);
+      }
+      printf("\n");
+    }
+    printf("-------------------\n");
+    // for(int code = 256; code < info.next; code++){
+    //   int addres = (int)info.entries[code].value;
+    //   addres-= (int)info.entries[256].value;
+    //   printf("%3d => %3d: ", code, addres);
+
+    //   for(int i = 0; i < info.entries[code].length; i++){
+    //       printf("%d ", info.entries[code].value[i]);
+    //   }
+
+    //   printf("(%d)\n", info.entries[code].length);
+    // }
+    // printf("-------------------\n");
+
+    lzw_free(&info);
     fclose(f);
 }

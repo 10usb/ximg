@@ -1,7 +1,7 @@
 # Ximg gif converter
 include ../../makefile.in
 OUTPUT=bin/xgif
-SOURCES=main.c
+SOURCES=main.c lzw.c
 DEPENDANCIES=libximg libxras libxbitmap
 TEMP=obj
 OBJECTS=$(SOURCES:%.c=$(TEMP)/%.o)
