@@ -22,7 +22,7 @@ struct xmap {
  * VECT - RGB scale/value
  */
 unsigned int xmap_create(struct ximg * image, unsigned int width, unsigned int height, unsigned int type, unsigned short colors);
-unsigned int map_size(unsigned short channels);
+unsigned int xmap_size(unsigned short channels);
 struct xmap * xmap_get_by_index(struct ximg * image, unsigned short index);
 struct xmap * xmap_get_by_id(struct ximg * image, unsigned int id);
 struct xpal * xmap_palette(struct ximg * image, struct xmap * mapped);
