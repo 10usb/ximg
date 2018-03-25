@@ -5,7 +5,6 @@
  * Handles the bitmap format
  */
 
-
 struct xgif_header {
   unsigned short width;
   unsigned short height;
@@ -37,6 +36,12 @@ struct xgif_image {
         unsigned char tableSize : 3;
     } __attribute__((__packed__));
   };
+  unsigned char minimumCodeSize;
+} __attribute__((__packed__));
+
+struct xgif_extension {
+  unsigned char type;
+  unsigned char size;
 } __attribute__((__packed__));
 
 #endif

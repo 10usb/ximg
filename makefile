@@ -1,29 +1,34 @@
 # Workspace
-TOOLS=xbitmap ximg
-LIBS=libxbitmap libximg libxras
-ifeq ($(OS),Windows_NT)
-    TARGETS=$(TOOLS:%=bin/%.exe)
-	SUFFIX=.exe
-else
-	TARGETS=$(TOOLS:%=bin/%)
-	SUFFIX=
-endif
+OUTPUT=bin
+TEMP=obj
+#TOOLS=xbitmap ximg
+TOOLS=xgif
+#LIBS=libxbitmap libximg libxras
+LIBS=liblzw
+
+TARGETS=$(TOOLS:%=$(OUTPUT)/%)
+OBJECTS=$(LIBS:%=$(TEMP)/%)
+
+build: $(OBJECTS) $(TARGETS)
+
+rebuild: clean $(OBJECTS) $(TARGETS)
 
 all: $(LIBS) $(TOOLS)
 
 clean:
 	$(foreach x,$(LIBS),$(MAKE) -C $(x) clean;)
 	$(foreach x,$(TOOLS),$(MAKE) -C tools/$(x) clean;)
-	rm -rf bin
+	rm -rf $(TARGETS) $(OBJECTS)
 
-bin:
-	mkdir bin
+$(TARGETS): $(OUTPUT) $(OBJECTS)
+	@echo "Building $(subst $(OUTPUT)/,,$@)"
+	@$(MAKE) --no-print-directory -C tools/$(subst $(OUTPUT)/,,$@) build OUTPUT=$(abspath $@)
 
-$(LIBS):
-	$(MAKE) -C $@
+$(OBJECTS): $(TEMP)
+	@echo "Building $(subst $(TEMP)/,,$@)"
+	@$(MAKE) --no-print-directory -C $(subst $(TEMP)/,,$@) build OUTPUT=$(abspath $@).o
 
-$(TOOLS): bin
-	$(MAKE) -C tools/$@ $@$(SUFFIX)
-	cp tools/$@/$@$(SUFFIX) bin/$@$(SUFFIX)
+$(OUTPUT) $(TEMP):
+	mkdir $@
 
-.PHONY: all clean $(TOOLS) $(LIBS)
+.PHONY: build rebuild all clean $(TOOLS) $(LIBS)

@@ -90,7 +90,6 @@ int main(int argc, const char ** argv){
     unsigned char c;
     int decoded;
 
-    fread(&c, 1, 1, f); // bits?
     fread(&c, 1, 1, f); // length?
 
     fread(&c, 1, 1, f);

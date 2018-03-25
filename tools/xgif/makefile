@@ -1,8 +1,8 @@
 # Ximg gif converter
 include ../../makefile.in
 OUTPUT=bin/xgif
-SOURCES=main.c lzw.c
-DEPENDANCIES=libximg libxras libxbitmap
+SOURCES=main.c
+DEPENDANCIES=libximg libxras libxbitmap liblzw
 TEMP=obj
 OBJECTS=$(SOURCES:%.c=$(TEMP)/%.o)
 ifeq ($(OS),Windows_NT)
@@ -11,8 +11,14 @@ else
 	TARGET=$(OUTPUT)
 endif
 CFLAGS=-I$(INCLUDES)
-LIBS=$(foreach x, $(DEPENDANCIES), $(ROOT)$(x)/$(x).o)
-all: dependencies $(TARGET)
+LIBS=$(foreach x, $(DEPENDANCIES), $(ROOT)obj/$(x).o)
+
+build: $(TARGET)
+
+rebuild: clean dependencies $(TARGET)
+
+clean:
+	$(RM) $(TARGET) $(OBJECTS)
 
 $(TARGET): $(dir $(TARGET)) $(TEMP) $(OBJECTS) $(LIBS)
 	@echo "$(CC) -Wall -o $@ $(OBJECTS) <$(DEPENDANCIES)>"
@@ -24,11 +30,10 @@ $(TEMP)/%.o: src/%.c
 $(TEMP) $(dir $(TARGET)):
 	mkdir $@
 
-clean:
-	$(RM) $(TARGET) $(OBJECTS)
+$(LIBS):
+	@$(MAKE) --no-print-directory -C $(@:$(ROOT)obj/%.o=$(ROOT)%) OUTPUT=$@
 
 dependencies:
-	@$(foreach x,$(DEPENDANCIES:%=$(ROOT)%),$(MAKE) --no-print-directory -C $(x);)
+	@$(foreach x,$(DEPENDANCIES),$(MAKE) --no-print-directory -C $(ROOT)$(x) OUTPUT=$(ROOT)obj/$(x).o;)
 
-
-.PHONY: clean all dependencies
+.PHONY: build rebuild clean dependencies
