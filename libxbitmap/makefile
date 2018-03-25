@@ -14,10 +14,10 @@ rebuild: clean $(OUTPUT)
 clean:
 	$(RM) $(OUTPUT) $(OBJECTS)
 
-$(OUTPUT): $(dir $(OUTPUT)) $(TEMP) $(OBJECTS)
+$(OUTPUT): $(OBJECTS) | $(dir $(OUTPUT))
 	$(LD) -i -o $@ $(OBJECTS)
 
-$(TEMP)/%.o: src/%.c
+$(TEMP)/%.o: src/%.c | $(TEMP)
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 $(TEMP) $(dir $(OUTPUT)):
