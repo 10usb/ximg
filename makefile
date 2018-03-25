@@ -3,32 +3,26 @@ OUTPUT=bin
 TEMP=obj
 #TOOLS=xbitmap ximg
 TOOLS=xgif
-#LIBS=libxbitmap libximg libxras
-LIBS=liblzw
+LIBS=libximg libxras libxbitmap liblzw
 
 TARGETS=$(TOOLS:%=$(OUTPUT)/%)
-OBJECTS=$(LIBS:%=$(TEMP)/%)
+OBJECTS=$(LIBS:%=$(TEMP)/%.o)
 
 build: $(OBJECTS) $(TARGETS)
 
 rebuild: clean $(OBJECTS) $(TARGETS)
 
-all: $(LIBS) $(TOOLS)
-
 clean:
-	$(foreach x,$(LIBS),$(MAKE) -C $(x) clean;)
-	$(foreach x,$(TOOLS),$(MAKE) -C tools/$(x) clean;)
+	#$(foreach x,$(LIBS),$(MAKE) -C $(x) clean;)
+	#$(foreach x,$(TOOLS),$(MAKE) -C tools/$(x) clean;)
 	rm -rf $(TARGETS) $(OBJECTS)
 
-$(TARGETS): $(OUTPUT) $(OBJECTS)
+$(TARGETS): $(OBJECTS)
 	@echo "Building $(subst $(OUTPUT)/,,$@)"
 	@$(MAKE) --no-print-directory -C tools/$(subst $(OUTPUT)/,,$@) build OUTPUT=$(abspath $@)
 
-$(OBJECTS): $(TEMP)
+$(OBJECTS):
 	@echo "Building $(subst $(TEMP)/,,$@)"
-	@$(MAKE) --no-print-directory -C $(subst $(TEMP)/,,$@) build OUTPUT=$(abspath $@).o
+	@$(MAKE) --no-print-directory -C $(@:$(TEMP)/%.o=%) build OUTPUT=$(abspath $@)
 
-$(OUTPUT) $(TEMP):
-	mkdir $@
-
-.PHONY: build rebuild all clean $(TOOLS) $(LIBS)
+.PHONY: build rebuild clean $(TARGETS)

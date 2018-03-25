@@ -3,6 +3,7 @@ include ../makefile.in
 OUTPUT=bin/liblzw.o
 SOURCES=lzw.c
 TEMP=obj
+
 OBJECTS=$(SOURCES:%.c=$(TEMP)/%.o)
 CFLAGS=-I$(INCLUDES)
 

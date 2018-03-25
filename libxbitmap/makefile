@@ -1,19 +1,26 @@
 # Library Ximg Bitmap
 include ../makefile.in
+OUTPUT=bin/libxbitmap.o
 SOURCES=xbitmap.c
-OBJECTS=$(SOURCES:.c=.o)
-TARGET=libxbitmap.o
-INCLUDES=-I../includes
+TEMP=obj
 
-$(TARGET): $(OBJECTS)
-	$(LD) -i -o $@ $(OBJECTS)
+OBJECTS=$(SOURCES:%.c=$(TEMP)/%.o)
+CFLAGS=-I$(INCLUDES)
 
-%.o: %.c
-	$(CC) -c $(INCLUDES) $<
+build: $(OUTPUT)
+
+rebuild: clean $(OUTPUT)
 
 clean:
-	$(RM) $(TARGET) $(OBJECTS)
+	$(RM) $(OUTPUT) $(OBJECTS)
 
-all: $(TARGET)
+$(OUTPUT): $(dir $(OUTPUT)) $(TEMP) $(OBJECTS)
+	$(LD) -i -o $@ $(OBJECTS)
 
-.PHONY: clean all
+$(TEMP)/%.o: src/%.c
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+$(TEMP) $(dir $(OUTPUT)):
+	mkdir $@
+
+.PHONY: build rebuild clean
