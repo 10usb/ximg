@@ -1,7 +1,7 @@
 # Library Ximg
 include ../makefile.in
 OUTPUT=bin/libximg.o
-SOURCES=ximg.c io.c
+SOURCES=ximg.c io.c xpal.c xtypes.c
 TEMP=obj
 
 OBJECTS=$(SOURCES:%.c=$(TEMP)/%.o)

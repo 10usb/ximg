@@ -81,5 +81,6 @@ unsigned int ximg_make(const char * type){
 }
 
 void * xchu_contents(struct xchu * chunk){
+    if(!chunk) return 0;
     return ((void*)chunk) + sizeof(struct xchu);
 }

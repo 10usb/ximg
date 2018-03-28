@@ -2,46 +2,13 @@
 #define XGIF_H
 
 /**
- * Handles the bitmap format
+ * Handles the GIF format
+ * (GIF in dutch has a so much cooler meaning)
  */
 
-struct xgif_header {
-  unsigned short width;
-  unsigned short height;
-  union {
-    unsigned char flags;
-    struct {
-        unsigned char hasTable : 1;
-        unsigned char colorResolution : 3;
-        unsigned char sortFlag : 1;
-        unsigned char tableSize : 3;
-    } __attribute__((__packed__));
-  };
-  unsigned char backgroundIndex;
-  unsigned char pixelRatio;
-} __attribute__((__packed__));
+#include <ximg/ximg.h>
 
-struct xgif_image {
-  unsigned short left;
-  unsigned short top;
-  unsigned short width;
-  unsigned short height;
-  union {
-    unsigned char flags;
-    struct {
-        unsigned char hasTable : 1;
-        unsigned char interlaced : 1;
-        unsigned char sortFlag : 1;
-        unsigned char reserved : 2;
-        unsigned char tableSize : 3;
-    } __attribute__((__packed__));
-  };
-  unsigned char minimumCodeSize;
-} __attribute__((__packed__));
-
-struct xgif_extension {
-  unsigned char type;
-  unsigned char size;
-} __attribute__((__packed__));
+struct ximg * xgif_load(const char * filename);
+int xgif_save(struct ximg * image, unsigned int id, const char * filename, unsigned char bits);
 
 #endif

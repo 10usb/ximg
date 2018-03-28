@@ -2,7 +2,7 @@
 include ../../makefile.in
 OUTPUT=bin/xgif
 SOURCES=main.c
-DEPENDANCIES=libximg libxras libxbitmap liblzw
+DEPENDANCIES=libximg libxras libxbitmap liblzw libxgif
 TEMP=obj
 OBJECTS=$(SOURCES:%.c=$(TEMP)/%.o)
 ifeq ($(OS),Windows_NT)

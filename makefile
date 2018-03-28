@@ -3,7 +3,7 @@ OUTPUT=bin
 TEMP=obj
 #TOOLS=xbitmap ximg
 TOOLS=xgif
-LIBS=libximg libxras libxbitmap liblzw
+LIBS=libximg libxras libxbitmap liblzw libxgif
 
 ifeq ($(OS),Windows_NT)
     SUFFIX=.exe
@@ -21,14 +21,14 @@ clean:
 	rm -rf $(TARGETS) $(OBJECTS)
 
 clean-all:
-	@$(foreach x,$(OBJECTS),$(MAKE) --no-print-directory -C $(x:$(TEMP)/%.o=%) clean OUTPUT=$(abspath $(x));)
-	@$(foreach x,$(TARGETS),$(MAKE) --no-print-directory -C tools/$(x:$(OUTPUT)/%$(SUFFIX)=%) clean OUTPUT=$(abspath $(x:%$(SUFFIX)=%));)
+	@$(foreach x,$(OBJECTS),$(MAKE) --no-print-directory -C $(x:$(TEMP)/%.o=%) clean OUTPUT=$(abspath $(x)) && ) true;
+	@$(foreach x,$(TARGETS),$(MAKE) --no-print-directory -C tools/$(x:$(OUTPUT)/%$(SUFFIX)=%) clean OUTPUT=$(abspath $(x:%$(SUFFIX)=%)) && ) true;
 
 rebuild-all: clean-all build
 
 check:
-	@$(foreach x,$(OBJECTS),$(MAKE) --no-print-directory -C $(x:$(TEMP)/%.o=%) build OUTPUT=$(abspath $(x));)
-	@$(foreach x,$(TARGETS),$(MAKE) --no-print-directory -C tools/$(x:$(OUTPUT)/%$(SUFFIX)=%) build OUTPUT=$(abspath $(x:%$(SUFFIX)=%));)
+	@$(foreach x,$(OBJECTS),$(MAKE) --no-print-directory -C $(x:$(TEMP)/%.o=%) build OUTPUT=$(abspath $(x)) && ) true;
+	@$(foreach x,$(TARGETS),$(MAKE) --no-print-directory -C tools/$(x:$(OUTPUT)/%$(SUFFIX)=%) build OUTPUT=$(abspath $(x:%$(SUFFIX)=%)) && ) true;
 
 $(OBJECTS):
 	@echo "Building $(@:$(TEMP)/%.o=%)"

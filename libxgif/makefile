@@ -1,7 +1,7 @@
-# Library Ximg Raster
+# Library Ximg Gif
 include ../makefile.in
-OUTPUT=bin/libxras.o
-SOURCES=xras.c xchan.c xreader.c xwriter.c xmap.c
+OUTPUT=bin/libxgif.o
+SOURCES=xgif.c
 TEMP=obj
 
 OBJECTS=$(SOURCES:%.c=$(TEMP)/%.o)
