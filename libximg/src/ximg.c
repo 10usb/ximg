@@ -1,9 +1,11 @@
 #include <ximg/ximg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 struct ximg * ximg_create(){
-    struct ximg * image = (struct ximg*)malloc(sizeof(struct ximg));
+    struct ximg * image = malloc(sizeof(struct ximg));
+    if(!image) return 0;
     memset(image, 0, sizeof(struct ximg));
     memcpy(image->header.fileid, "Ximg\r\n10", 8);
     image->header.size = sizeof(struct ximg_header);
@@ -11,8 +13,17 @@ struct ximg * ximg_create(){
 }
 
 void ximg_free(struct ximg * image){
+    if(!image) return;
+    
+    if(!image->header.chunks){
+        free(image);
+        return;
+    }
+
     int i = 0;
-    while(i<image->header.chunks){
+    while(i < image->header.chunks){
+        if(!image->chunks[i]) continue;
+
         free(image->chunks[i]);
         i++;
     }
@@ -21,12 +32,19 @@ void ximg_free(struct ximg * image){
 }
 
 unsigned int ximg_add(struct ximg * image, unsigned int size, unsigned int type){
-    struct xchu * chunk = (struct xchu*)malloc(sizeof(struct xchu) + size);
+    struct xchu * chunk = malloc(sizeof(struct xchu) + size);
+    if(!chunk) return 0;
+
     memset(chunk, 0, sizeof(struct xchu) + size);
     chunk->size = sizeof(struct xchu) + size;
     chunk->type = type;
 
     struct xchu ** chunks = malloc(sizeof(struct xchu*) * (image->header.chunks + 1));
+    if(!chunks){
+        free(chunk);
+        return 0;
+    }
+
     if(image->chunks){
         memcpy(chunks, image->chunks, sizeof(struct xchu*) * (image->header.chunks));
         free(image->chunks);
@@ -74,9 +92,9 @@ struct xchu * ximg_find(struct ximg * image, unsigned int type, unsigned short o
 }
 
 unsigned int ximg_make(const char * type){
-    unsigned int value;
-    memset(&value, 0, 4);
-    memcpy(&value, type, strlen(type) < 4 ? strlen(type) : 4);
+    unsigned int value = 0;
+    int length = (!type[0]) ? 0 : (!type[1]) ? 1 : (!type[2]) ? 2 : (!type[3]) ? 3 : 4;
+    memcpy(&value, type, length);
     return value;
 }
 

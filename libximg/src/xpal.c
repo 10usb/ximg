@@ -10,13 +10,13 @@ unsigned int xpal_create(struct ximg * image, unsigned int type, unsigned short 
 
 unsigned int xpal_size(unsigned int type, unsigned short size){
     if(ximg_make("RGB8") == type){
-        return size * XPIXEL_RGB8_SIZE;
+        return sizeof(struct xpal) + size * XPIXEL_RGB8_SIZE;
     }else if(ximg_make("RGBA") == type){
-        return size * XPIXEL_RGBA_SIZE;
+        return sizeof(struct xpal) + size * XPIXEL_RGBA_SIZE;
     }else if(ximg_make("VECT") == type || ximg_make("VEC1") == type){
-        return size * XVECTOR_VECT_SIZE;
+        return sizeof(struct xpal) + size * XVECTOR_VECT_SIZE;
     }else{
-        return 0;
+        return sizeof(struct xpal);
     }
 }
 
@@ -35,7 +35,7 @@ static inline void * xpal_entry(struct xpal * palette, unsigned short index, int
 }
 
 int xpal_get_rgb(struct xpal * palette, unsigned short index, struct xpixel * pixel){
-    if(index >= palette->size) return 0;
+    if(!palette || !pixel ||index >= palette->size) return 0;
 
     switch(palette->type){
         case XPAL_RGB8: return xtypes_convert(xpal_entry(palette, index, XPIXEL_RGB8_SIZE), pixel, XPIXEL_RGB8, XPIXEL_RGB8);
@@ -48,7 +48,7 @@ int xpal_get_rgb(struct xpal * palette, unsigned short index, struct xpixel * pi
 }
 
 int xpal_get_rgba(struct xpal * palette, unsigned short index, struct xpixel * pixel){
-    if(index >= palette->size) return 0;
+    if(!palette || !pixel ||index >= palette->size) return 0;
 
     switch(palette->type){
         case XPAL_RGB8: return xtypes_convert(xpal_entry(palette, index, XPIXEL_RGB8_SIZE), pixel, XPIXEL_RGB8, XPIXEL_RGBA);
@@ -61,7 +61,7 @@ int xpal_get_rgba(struct xpal * palette, unsigned short index, struct xpixel * p
 }
 
 int xpal_get_vector(struct xpal * palette, unsigned short index, struct xvector * vector){
-    if(index >= palette->size) return 0;
+    if(!palette || !vector ||index >= palette->size) return 0;
 
     switch(palette->type){
         case XPAL_RGB8: return xtypes_convert(xpal_entry(palette, index, XPIXEL_RGB8_SIZE), vector, XPIXEL_RGB8, XVECTOR_VECT);
@@ -74,7 +74,7 @@ int xpal_get_vector(struct xpal * palette, unsigned short index, struct xvector 
 }
 
 int xpal_get_vector1(struct xpal * palette, unsigned short index, struct xvector * vector){
-    if(index >= palette->size) return 0;
+    if(!palette || !vector ||index >= palette->size) return 0;
 
     switch(palette->type){
         case XPAL_RGB8: return xtypes_convert(xpal_entry(palette, index, XPIXEL_RGB8_SIZE), vector, XPIXEL_RGB8, XVECTOR_VEC1);
@@ -87,8 +87,8 @@ int xpal_get_vector1(struct xpal * palette, unsigned short index, struct xvector
 }
 
 int xpal_set_rgb(struct xpal * palette, unsigned short index, struct xpixel * pixel){
-    if(index >= palette->size) return 0;
-
+    if(!palette || !pixel ||index >= palette->size) return 0;
+    
     switch(palette->type){
         case XPAL_RGB8: return xtypes_convert(pixel, xpal_entry(palette, index, XPIXEL_RGB8_SIZE), XPIXEL_RGB8, XPIXEL_RGB8);
         case XPAL_RGBA: return xtypes_convert(pixel, xpal_entry(palette, index, XPIXEL_RGBA_SIZE), XPIXEL_RGB8, XPIXEL_RGBA);
@@ -100,7 +100,7 @@ int xpal_set_rgb(struct xpal * palette, unsigned short index, struct xpixel * pi
 }
 
 int xpal_set_rgba(struct xpal * palette, unsigned short index, struct xpixel * pixel){
-    if(index >= palette->size) return 0;
+    if(!palette || !pixel ||index >= palette->size) return 0;
 
     switch(palette->type){
         case XPAL_RGB8: return xtypes_convert(pixel, xpal_entry(palette, index, XPIXEL_RGB8_SIZE), XPIXEL_RGBA, XPIXEL_RGB8);
@@ -113,7 +113,7 @@ int xpal_set_rgba(struct xpal * palette, unsigned short index, struct xpixel * p
 }
 
 int xpal_set_vector(struct xpal * palette, unsigned short index, struct xvector * vector){
-    if(index >= palette->size) return 0;
+    if(!palette || !vector ||index >= palette->size) return 0;
 
     switch(palette->type){
         case XPAL_RGB8: return xtypes_convert(vector, xpal_entry(palette, index, XPIXEL_RGB8_SIZE), XVECTOR_VECT, XPIXEL_RGB8);
@@ -126,7 +126,7 @@ int xpal_set_vector(struct xpal * palette, unsigned short index, struct xvector 
 }
 
 int xpal_set_vector1(struct xpal * palette, unsigned short index, struct xvector * vector){
-    if(index >= palette->size) return 0;
+    if(!palette || !vector ||index >= palette->size) return 0;
 
     switch(palette->type){
         case XPAL_RGB8: return xtypes_convert(vector, xpal_entry(palette, index, XPIXEL_RGB8_SIZE), XVECTOR_VEC1, XPIXEL_RGB8);

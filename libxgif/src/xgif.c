@@ -66,6 +66,11 @@ static inline unsigned int xgif_read_palette(struct ximg * image, FILE * f, int 
 	if(!id) return 0;
 
 	struct xpal * palette = xpal_get_by_id(image, id);
+	if(!palette){
+		printf("Failed to get palete just created");
+		return 0;
+	}
+
 	struct xpixel color;
 	for(int i = 0; i < size; i++){
 		if(!fread(&color, 3, 1, f)) return 0;
@@ -107,6 +112,11 @@ struct ximg * xgif_load(const char * filename){
 	printf("pixelRatio     : %d\n", header.pixelRatio);
 
     struct ximg * image = ximg_create();
+	if(!image) {
+		printf("Failed to create ximg");
+		return 0;
+	}
+
 	unsigned int globalPalette = 0;
 
 	if(header.hasTable){
@@ -115,6 +125,7 @@ struct ximg * xgif_load(const char * filename){
 			printf("Failed to read palette");
 			ximg_free(image);
 			fclose(f);
+			return 0;
 		}
 	}
 
@@ -172,6 +183,7 @@ struct ximg * xgif_load(const char * filename){
 			printf("Failed to read palette");
 			ximg_free(image);
 			fclose(f);
+			return 0;
 		}
 	}else{
 		palette = globalPalette;
@@ -182,6 +194,7 @@ struct ximg * xgif_load(const char * filename){
 		printf("Failed to craate mapped");
 		ximg_free(image);
 		fclose(f);
+		return 0;
 	}
 
 	struct xchan * channel = xmap_channel(image, xmap_get_by_id(image, mapped));
@@ -201,6 +214,7 @@ struct ximg * xgif_load(const char * filename){
 			printf("Failed to read block");
 			ximg_free(image);
 			fclose(f);
+			return 0;
 		}
 
 		int decoded;

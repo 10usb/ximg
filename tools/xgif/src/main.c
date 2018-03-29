@@ -11,8 +11,6 @@ int main(int argc, const char ** argv){
   
   const char * file = argv[1];
 
-  printf("File to process: %s\n", file);
-
   struct ximg * image = xgif_load(file);
   if(image){
     ximg_save(image, "bin/output.ximg");
