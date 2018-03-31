@@ -1,14 +1,16 @@
 #include <ximg/xpal.h>
 
-unsigned int xpal_create(struct ximg * image, unsigned int type, unsigned short size){
-    unsigned int id = ximg_add(image, xpal_size(type, size), ximg_make("XPAL"));
+ximgid_t xpal_create(struct ximg * image, ximgtype_t type, uint16_t size){
+    ximgid_t id = ximg_add(image, xpal_size(type, size), ximg_make("XPAL"));
+    if(!id) return 0;
     struct xpal * palette = xpal_get_by_id(image, id);
+    if(!palette) return 0;
     palette->type = type;
     palette->size = size;
     return id;
 }
 
-unsigned int xpal_size(unsigned int type, unsigned short size){
+uint32_t xpal_size(ximgtype_t type, uint16_t size){
     if(ximg_make("RGB8") == type){
         return sizeof(struct xpal) + size * XPIXEL_RGB8_SIZE;
     }else if(ximg_make("RGBA") == type){
@@ -20,21 +22,22 @@ unsigned int xpal_size(unsigned int type, unsigned short size){
     }
 }
 
-struct xpal * xpal_get_by_index(struct ximg * image, unsigned short index){
-    struct xchu * chunk = ximg_find(image, ximg_make("XPAL"), index);
+struct xpal * xpal_get_by_index(struct ximg * image, uint16_t index){
+    return xchu_contents(ximg_find(image, ximg_make("XPAL"), index));
+}
+
+struct xpal * xpal_get_by_id(struct ximg * image, ximgid_t id){
+    struct xchu * chunk = ximg_get(image, id);
     if(!chunk) return 0;
+    if(chunk->type != ximg_make("XPAL")) return 0;
     return xchu_contents(chunk);
 }
 
-struct xpal * xpal_get_by_id(struct ximg * image, unsigned int id){
-    return xchu_contents(ximg_get(image, id));
-}
-
-static inline void * xpal_entry(struct xpal * palette, unsigned short index, int size){
+static inline void * xpal_entry(struct xpal * palette, uint16_t index, int size){
     return ((void*)palette) + sizeof(struct xpal) + index * size;
 }
 
-int xpal_get_rgb(struct xpal * palette, unsigned short index, struct xpixel * pixel){
+int xpal_get_rgb(struct xpal * palette, uint16_t index, struct xpixel * pixel){
     if(!palette || !pixel ||index >= palette->size) return 0;
 
     switch(palette->type){
@@ -47,7 +50,7 @@ int xpal_get_rgb(struct xpal * palette, unsigned short index, struct xpixel * pi
     return 0;
 }
 
-int xpal_get_rgba(struct xpal * palette, unsigned short index, struct xpixel * pixel){
+int xpal_get_rgba(struct xpal * palette, uint16_t index, struct xpixel * pixel){
     if(!palette || !pixel ||index >= palette->size) return 0;
 
     switch(palette->type){
@@ -60,7 +63,7 @@ int xpal_get_rgba(struct xpal * palette, unsigned short index, struct xpixel * p
     return 0;
 }
 
-int xpal_get_vector(struct xpal * palette, unsigned short index, struct xvector * vector){
+int xpal_get_vector(struct xpal * palette, uint16_t index, struct xvector * vector){
     if(!palette || !vector ||index >= palette->size) return 0;
 
     switch(palette->type){
@@ -73,7 +76,7 @@ int xpal_get_vector(struct xpal * palette, unsigned short index, struct xvector 
     return 0;
 }
 
-int xpal_get_vector1(struct xpal * palette, unsigned short index, struct xvector * vector){
+int xpal_get_vector1(struct xpal * palette, uint16_t index, struct xvector * vector){
     if(!palette || !vector ||index >= palette->size) return 0;
 
     switch(palette->type){
@@ -86,7 +89,7 @@ int xpal_get_vector1(struct xpal * palette, unsigned short index, struct xvector
     return 0;
 }
 
-int xpal_set_rgb(struct xpal * palette, unsigned short index, struct xpixel * pixel){
+int xpal_set_rgb(struct xpal * palette, uint16_t index, struct xpixel * pixel){
     if(!palette || !pixel ||index >= palette->size) return 0;
     
     switch(palette->type){
@@ -99,7 +102,7 @@ int xpal_set_rgb(struct xpal * palette, unsigned short index, struct xpixel * pi
     return 0;
 }
 
-int xpal_set_rgba(struct xpal * palette, unsigned short index, struct xpixel * pixel){
+int xpal_set_rgba(struct xpal * palette, uint16_t index, struct xpixel * pixel){
     if(!palette || !pixel ||index >= palette->size) return 0;
 
     switch(palette->type){
@@ -112,7 +115,7 @@ int xpal_set_rgba(struct xpal * palette, unsigned short index, struct xpixel * p
     return 0;
 }
 
-int xpal_set_vector(struct xpal * palette, unsigned short index, struct xvector * vector){
+int xpal_set_vector(struct xpal * palette, uint16_t index, struct xvector * vector){
     if(!palette || !vector ||index >= palette->size) return 0;
 
     switch(palette->type){
@@ -125,7 +128,7 @@ int xpal_set_vector(struct xpal * palette, unsigned short index, struct xvector 
     return 0;
 }
 
-int xpal_set_vector1(struct xpal * palette, unsigned short index, struct xvector * vector){
+int xpal_set_vector1(struct xpal * palette, uint16_t index, struct xvector * vector){
     if(!palette || !vector ||index >= palette->size) return 0;
 
     switch(palette->type){

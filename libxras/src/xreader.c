@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-int xreader_init(struct xreader * reader, struct ximg * image, unsigned short index){
+int xreader_init(struct xreader * reader, struct ximg * image, uint16_t index){
     reader->image = image;
 
     struct xchu * info = ximg_find(image, ximg_make("XINF"), 0);
@@ -16,9 +16,9 @@ int xreader_init(struct xreader * reader, struct ximg * image, unsigned short in
 
     reader->raster = xchu_contents(raster);
 
-    reader->channnels = (struct xchan **)malloc(sizeof(struct xchan *) * reader->raster->channels);
+    reader->channnels = malloc(sizeof(struct xchan *) * reader->raster->channels);
 
-    unsigned short channel = 0;
+    int channel = 0;
     while(channel < reader->raster->channels){
         reader->channnels[channel] = xras_channel(image, reader->raster, channel);
         channel++;
@@ -33,7 +33,7 @@ void xreader_clear(struct xreader * reader){
     free(reader->channnels);
 }
 
-int xreader_rgb(struct xreader * reader, unsigned short x, unsigned short y, struct xpixel * pixel){
+int xreader_rgb(struct xreader * reader, uint16_t x, uint16_t y, struct xpixel * pixel){
     switch(reader->raster->type){
         case XRAS_RGB8:
             pixel->r = xchan_get8(reader->channnels[0], x, y);
@@ -72,7 +72,7 @@ int xreader_rgb(struct xreader * reader, unsigned short x, unsigned short y, str
     }
 }
 
-int xreader_rgba(struct xreader * reader, unsigned short x, unsigned short y, struct xpixel * pixel){
+int xreader_rgba(struct xreader * reader, uint16_t x, uint16_t y, struct xpixel * pixel){
     switch(reader->raster->type){
         case XRAS_RGB8:
             pixel->r = xchan_get8(reader->channnels[0], x, y);
@@ -116,7 +116,7 @@ int xreader_rgba(struct xreader * reader, unsigned short x, unsigned short y, st
     }
 }
 
-int xreader_vector(struct xreader * reader, unsigned short x, unsigned short y, struct xvector * vector){
+int xreader_vector(struct xreader * reader, uint16_t x, uint16_t y, struct xvector * vector){
     switch(reader->raster->type){
         case XRAS_RGB8:
         case XRAS_RGBA:{
@@ -141,7 +141,7 @@ int xreader_vector(struct xreader * reader, unsigned short x, unsigned short y, 
 }
 
 
-int xreader_vector1(struct xreader * reader, unsigned short x, unsigned short y, struct xvector * vector){
+int xreader_vector1(struct xreader * reader, uint16_t x, uint16_t y, struct xvector * vector){
     switch(reader->raster->type){
         case XRAS_RGB8:
         case XRAS_RGBA:{

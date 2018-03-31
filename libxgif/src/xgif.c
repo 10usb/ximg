@@ -250,6 +250,6 @@ struct ximg * xgif_load(const char * filename){
    	return image;
 }
 
-int xgif_save(struct ximg * image, unsigned int id, const char * filename, unsigned char bits){
+int xgif_save(struct ximg * image, ximgid_t id, const char * filename){
 
 }

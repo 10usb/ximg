@@ -9,8 +9,8 @@
 #include <ximg/xchan.h>
 
 struct xras {
-    unsigned int type;
-    unsigned short channels;
+    ximgtype_t type;
+    uint8_t channels;
 } __attribute__((__packed__));
 
 
@@ -27,9 +27,10 @@ struct xras {
  * RGBA - RGB 32bits with alpha
  * VECT - RGB scale/value
  */
-unsigned int xras_create(struct ximg * image, unsigned int width, unsigned int height, unsigned int type, unsigned short channels);
-unsigned int xras_size(unsigned short channels);
-struct xras * xras_get_by_index(struct ximg * image, unsigned short index);
-struct xras * xras_get_by_id(struct ximg * image, unsigned int id);
-struct xchan * xras_channel(struct ximg * image, struct xras * raster, unsigned short channel);
+ximgid_t xras_create(struct ximg * image, uint16_t width, uint16_t height, ximgtype_t type, uint8_t channels);
+uint32_t xras_size(uint8_t channels);
+struct xras * xras_get_by_index(struct ximg * image, uint16_t index);
+struct xras * xras_get_by_id(struct ximg * image, ximgid_t id);
+ximgid_t * xras_channel_ids(struct xras * raster);
+struct xchan * xras_channel(struct ximg * image, struct xras * raster, uint8_t channel);
 #endif

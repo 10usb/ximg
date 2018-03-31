@@ -20,18 +20,18 @@ void ximg_free(struct ximg * image){
         return;
     }
 
-    int i = 0;
-    while(i < image->header.chunks){
-        if(!image->chunks[i]) continue;
+    int index = 0;
+    while(index < image->header.chunks){
+        if(!image->chunks[index]) continue;
 
-        free(image->chunks[i]);
-        i++;
+        free(image->chunks[index]);
+        index++;
     }
     free(image->chunks);
     free(image);
 }
 
-unsigned int ximg_add(struct ximg * image, unsigned int size, unsigned int type){
+unsigned int ximg_add(struct ximg * image, uint32_t size, ximgtype_t type){
     struct xchu * chunk = malloc(sizeof(struct xchu) + size);
     if(!chunk) return 0;
 
@@ -46,12 +46,12 @@ unsigned int ximg_add(struct ximg * image, unsigned int size, unsigned int type)
     }
 
     if(image->chunks){
-        memcpy(chunks, image->chunks, sizeof(struct xchu*) * (image->header.chunks));
+        memcpy(chunks, image->chunks, sizeof(struct xchu*) * image->header.chunks);
         free(image->chunks);
         image->chunks = chunks;
 
-        unsigned int index = 0;
-        unsigned int id = 0;
+        int index = 0;
+        ximgid_t id = 0;
         while(index < image->header.chunks){
             if(image->chunks[index]->id > id) id = image->chunks[index]->id;
             index++;
@@ -69,8 +69,8 @@ unsigned int ximg_add(struct ximg * image, unsigned int size, unsigned int type)
     return chunk->id;
 }
 
-struct xchu * ximg_get(struct ximg * image, unsigned int id){
-    unsigned short index = 0;
+struct xchu * ximg_get(struct ximg * image, ximgid_t id){
+    int index = 0;
     while(index < image->header.chunks){
         if(image->chunks[index]->id == id) return image->chunks[index];
         index++;
@@ -78,8 +78,8 @@ struct xchu * ximg_get(struct ximg * image, unsigned int id){
     return 0;
 }
 
-struct xchu * ximg_find(struct ximg * image, unsigned int type, unsigned short offset){
-    unsigned short index = 0;
+struct xchu * ximg_find(struct ximg * image, ximgtype_t type, uint16_t offset){
+    int index = 0;
     while(index < image->header.chunks){
         if(image->chunks[index]->type == type){
             if(offset-- == 0){
@@ -91,8 +91,8 @@ struct xchu * ximg_find(struct ximg * image, unsigned int type, unsigned short o
     return 0;
 }
 
-unsigned int ximg_make(const char * type){
-    unsigned int value = 0;
+ximgtype_t ximg_make(const char * type){
+    ximgtype_t value = 0;
     int length = (!type[0]) ? 0 : (!type[1]) ? 1 : (!type[2]) ? 2 : (!type[3]) ? 3 : 4;
     memcpy(&value, type, length);
     return value;

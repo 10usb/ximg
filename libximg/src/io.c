@@ -8,7 +8,7 @@ struct ximg * ximg_load(const char * filename){
     if(!f) return 0;
 
     fseek(f, 0, SEEK_END);
-    unsigned int size = ftell(f);
+    long size = ftell(f);
     fseek(f, 0, SEEK_SET);
 
     if(size < sizeof(struct ximg_header)){
@@ -16,12 +16,16 @@ struct ximg * ximg_load(const char * filename){
         return 0;
     }
 
-    struct ximg * image = (struct ximg*)malloc(sizeof(struct ximg));
+    struct ximg * image = malloc(sizeof(struct ximg));
     memset(image, 0, sizeof(struct ximg));
 
-    fread(&image->header, 1, sizeof(struct ximg_header), f);
+    if(!fread(&image->header, sizeof(struct ximg_header), 1, f)){
+        free(image);
+        fclose(f);
+        return 0;
+    }
 
-    if(memcmp(image->header.fileid, "Ximg\r\n10", 8)!=0){
+    if(memcmp(image->header.fileid, "Ximg\r\n10", 8) != 0){
         free(image);
         fclose(f);
         return 0;
@@ -34,17 +38,28 @@ struct ximg * ximg_load(const char * filename){
     }
 
     image->chunks = malloc(sizeof(struct xchu*) * (image->header.chunks));
+    if(!image->chunks){
+        free(image);
+        fclose(f);
+        return 0;
+    }
 
-    int i = 0;
-    while(i<image->header.chunks){
-        unsigned int chunk_size;
-        fread(&chunk_size, sizeof(unsigned int), 1, f);
+    int index = 0;
+    while(index < image->header.chunks){
+        uint32_t chunk_size;
+
+        // Read total size of chunk
+        fread(&chunk_size, sizeof(uint32_t), 1, f);
+
+        // Allocate chunk & set size
         struct xchu * chunk = (struct xchu*)malloc(chunk_size);
         chunk->size = chunk_size;
-        fread(((void*)chunk) + sizeof(unsigned int), 1, chunk->size - sizeof(unsigned int), f);
 
-        image->chunks[i] = chunk;
-        i++;
+        // Read remaining data of chunk
+        fread(((void*)chunk) + sizeof(uint32_t), 1, chunk_size - sizeof(uint32_t), f);
+
+        image->chunks[index] = chunk;
+        index++;
     }
     fclose(f);
 
@@ -56,10 +71,10 @@ int ximg_save(struct ximg * image, const char * filename){
     if(!f) return 0;
 
     fwrite(&image->header, 1, sizeof(struct ximg_header), f);
-    int i = 0;
-    while(i<image->header.chunks){
-        fwrite(image->chunks[i], 1, image->chunks[i]->size, f);
-        i++;
+    int index = 0;
+    while(index < image->header.chunks){
+        fwrite(image->chunks[index], 1, image->chunks[index]->size, f);
+        index++;
     }
     fclose(f);
 

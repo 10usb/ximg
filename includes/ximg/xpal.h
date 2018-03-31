@@ -9,8 +9,8 @@
 #include <ximg/xtypes.h>
 
 struct xpal {
-    unsigned int type;
-    unsigned short size;
+    ximgtype_t type;
+    uint16_t size;
 } __attribute__((__packed__));
 
 #define XPAL_RGB8 0x38424752
@@ -26,18 +26,18 @@ struct xpal {
  * RGBA - RGB 32bits with alpha
  * VECT - RGB scale/value
  */
-unsigned int xpal_create(struct ximg * image, unsigned int type, unsigned short size);
-unsigned int xpal_size(unsigned int type, unsigned short size);
-struct xpal * xpal_get_by_index(struct ximg * image, unsigned short index);
-struct xpal * xpal_get_by_id(struct ximg * image, unsigned int id);
+ximgid_t xpal_create(struct ximg * image, ximgtype_t type, uint16_t size);
+uint32_t xpal_size(ximgtype_t type, uint16_t size);
+struct xpal * xpal_get_by_index(struct ximg * image, uint16_t index);
+struct xpal * xpal_get_by_id(struct ximg * image, ximgid_t id);
 
-int xpal_get_rgb(struct xpal * palette, unsigned short index, struct xpixel * pixel);
-int xpal_get_rgba(struct xpal * palette, unsigned short index, struct xpixel * pixel);
-int xpal_get_vector(struct xpal * palette, unsigned short index, struct xvector * vector);
-int xpal_get_vector1(struct xpal * palette, unsigned short index, struct xvector * vector);
+int xpal_get_rgb(struct xpal * palette, uint16_t index, struct xpixel * pixel);
+int xpal_get_rgba(struct xpal * palette, uint16_t index, struct xpixel * pixel);
+int xpal_get_vector(struct xpal * palette, uint16_t index, struct xvector * vector);
+int xpal_get_vector1(struct xpal * palette, uint16_t index, struct xvector * vector);
 
-int xpal_set_rgb(struct xpal * palette, unsigned short index, struct xpixel * pixel);
-int xpal_set_rgba(struct xpal * palette, unsigned short index, struct xpixel * pixel);
-int xpal_set_vector(struct xpal * palette, unsigned short index, struct xvector * vector);
-int xpal_set_vector1(struct xpal * palette, unsigned short index, struct xvector * vector);
+int xpal_set_rgb(struct xpal * palette, uint16_t index, struct xpixel * pixel);
+int xpal_set_rgba(struct xpal * palette, uint16_t index, struct xpixel * pixel);
+int xpal_set_vector(struct xpal * palette, uint16_t index, struct xvector * vector);
+int xpal_set_vector1(struct xpal * palette, uint16_t index, struct xvector * vector);
 #endif

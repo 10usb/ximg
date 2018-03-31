@@ -27,7 +27,7 @@ static inline int xpixel_rgba_to_rgb8(const struct xpixel * src, struct xpixel *
     return 1;
 }
 
-int xtypes_convert(const void * src, void * dest, unsigned int src_type, unsigned int desc_type){
+int xtypes_convert(const void * src, void * dest, ximgtype_t src_type, ximgtype_t desc_type){
     switch(src_type){
         case XPIXEL_RGB8: {
             switch(desc_type){

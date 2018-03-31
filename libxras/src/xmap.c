@@ -1,37 +1,42 @@
 #include <ximg/xmap.h>
 #include <stdio.h>
 
-unsigned int xmap_create(struct ximg * image, unsigned int width, unsigned int height, unsigned int type, unsigned short colors){
+ximgid_t xmap_create(struct ximg * image, uint16_t width, uint16_t height, uint16_t type, uint16_t colors){
     return 0;
 }
 
-unsigned int xmap_create_with_palette(struct ximg * image, unsigned int width, unsigned int height, unsigned int palette){
+ximgid_t xmap_create_with_palette(struct ximg * image, uint16_t width, uint16_t height, ximgid_t palette){
     struct xpal * pal = xpal_get_by_id(image, palette);
     if(!pal) return 0;
 
-    unsigned char bits = 8;
+    int bits = 8;
     if((pal->size - 1) > 0xff){
         bits = 16;
     }
 
-    unsigned int id = ximg_add(image, sizeof(struct xmap), ximg_make("XMAP"));
-    struct xmap * map = xmap_get_by_id(image, id);
-    map->palette = palette;
+    ximgid_t id = ximg_add(image, sizeof(struct xmap), ximg_make("XMAP"));
+    if(!id) return 0;
 
+    struct xmap * map = xmap_get_by_id(image, id);
+    if(!map) return 0;
+
+    map->palette = palette;
     map->channel = ximg_add(image, xchan_size(width, height, bits), ximg_make("XCHA"));
-    xchan_create(width, height, bits, xchu_contents(ximg_get(image, map->channel)));
+
+    if(!xchan_create(width, height, bits, xchu_contents(ximg_get(image, map->channel)))) return 0;
 
     return id;
 }
 
-struct xmap * xmap_get_by_index(struct ximg * image, unsigned short index){
-    struct xchu * chunk = ximg_find(image, ximg_make("XMAP"), index);
-    if(!chunk) return 0;
-    return xchu_contents(chunk);
+struct xmap * xmap_get_by_index(struct ximg * image, uint16_t index){
+    return xchu_contents(ximg_find(image, ximg_make("XMAP"), index));
 }
 
-struct xmap * xmap_get_by_id(struct ximg * image, unsigned int id){
-    return xchu_contents(ximg_get(image, id));
+struct xmap * xmap_get_by_id(struct ximg * image, ximgid_t id){
+    struct xchu * chunk = ximg_get(image, id);
+    if(!chunk) return 0;
+    if(chunk->type != ximg_make("XMAP")) return 0;
+    return xchu_contents(chunk);
 }
 
 struct xpal * xmap_palette(struct ximg * image, struct xmap * mapped){
@@ -39,5 +44,8 @@ struct xpal * xmap_palette(struct ximg * image, struct xmap * mapped){
 }
 
 struct xchan * xmap_channel(struct ximg * image, struct xmap * mapped){
-    return xchu_contents(ximg_get(image, mapped->channel));
+    struct xchu * chunk = ximg_get(image, mapped->channel);
+    if(!chunk) return 0;
+    if(chunk->type != ximg_make("XCHA")) return 0;
+    return xchu_contents(chunk);
 }

@@ -8,6 +8,6 @@
 #include <ximg/ximg.h>
 
 struct ximg * xbitmap_load(const char * filename);
-int xbitmap_save(struct ximg * image, unsigned short index, const char * filename, unsigned char bits);
+int xbitmap_save(struct ximg * image, uint16_t index, const char * filename, uint8_t bits);
 
 #endif

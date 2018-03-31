@@ -1,15 +1,19 @@
 #include <ximg/xras.h>
-#include <ximg/xchan.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-inline unsigned int xras_size(unsigned short channels){
-    return sizeof(struct xras) + sizeof(unsigned int) * channels;
+inline uint32_t xras_size(uint8_t channels){
+    return sizeof(struct xras) + sizeof(ximgid_t) * channels;
 }
 
-unsigned int xras_create(struct ximg * image, unsigned int width, unsigned int height, unsigned int type, unsigned short channels){
-    unsigned char bits;
+inline ximgid_t * xras_channel_ids(struct xras * raster){
+    if(!raster) return 0;
+    return ((void*)raster) + sizeof(struct xras);
+}
+
+ximgid_t xras_create(struct ximg * image, uint16_t width, uint16_t height, ximgtype_t type, uint8_t channels){
+    uint8_t bits;
     // RGB8 - RGB 24bits image
     // RGBA - RGB 32bits with alpha
     // VECT - RGB scale/value
@@ -26,42 +30,47 @@ unsigned int xras_create(struct ximg * image, unsigned int width, unsigned int h
         return 0;
     }
 
-    unsigned int id = ximg_add(image, xras_size(channels), ximg_make("XRAS"));
+    ximgid_t id = ximg_add(image, xras_size(channels), ximg_make("XRAS"));
+    if(!id) return 0;
 
     struct xras * raster = xchu_contents(ximg_get(image, id));
+    if(!raster) return 0;
 
-    unsigned int * identifiers = ((void*)raster) + sizeof(struct xras);
+    ximgid_t * identifiers = xras_channel_ids(raster);
 
     raster->type = type;
     raster->channels = channels;
     for(int index = 0;  index < channels; index++){
-        identifiers[index] = ximg_add(image, xchan_size(width, height, 8), ximg_make("XCHA"));
-        xchan_create(width, height, 8, xchu_contents(ximg_get(image, identifiers[index])));
+        identifiers[index] = ximg_add(image, xchan_size(width, height, bits), ximg_make("XCHA"));
+        if(!identifiers[index]){
+            // TODO remove XRAS chunk
+            return 0;
+        }
+        xchan_create(width, height, bits, xchu_contents(ximg_get(image, identifiers[index])));
     }
 
     return id;
 }
 
-struct xras * xras_get_by_index(struct ximg * image, unsigned short index){
-    struct xchu * chunk = ximg_find(image, ximg_make("XRAS"), index);
-    if(!chunk) return 0;
-    return (struct xras *)xchu_contents(chunk);
+struct xras * xras_get_by_index(struct ximg * image, uint16_t index){
+    return xchu_contents(ximg_find(image, ximg_make("XRAS"), index));
 }
 
-struct xras * xras_get_by_id(struct ximg * image, unsigned int id){
+struct xras * xras_get_by_id(struct ximg * image, ximgid_t id){
     struct xchu * chunk = ximg_get(image, id);
     if(!chunk) return 0;
     if(chunk->type != ximg_make("XRAS")) return 0;
-    return (struct xras *)xchu_contents(chunk);
+    return xchu_contents(chunk);
 }
 
-struct xchan * xras_channel(struct ximg * image, struct xras * raster, unsigned short channel){
-    if(channel >= raster->channels) return 0;
+struct xchan * xras_channel(struct ximg * image, struct xras * raster, uint8_t channel){
+    if(!raster || channel >= raster->channels) return 0;
 
-    unsigned int * identifiers = ((void*)raster) + sizeof(struct xras);
+    ximgid_t * identifiers = xras_channel_ids(raster);
+    if(!identifiers) return 0;
 
     struct xchu * chunk = ximg_get(image, identifiers[channel]);
     if(!chunk) return 0;
 
-    return (struct xchan *)xchu_contents(chunk);
+    return xchu_contents(chunk);
 }

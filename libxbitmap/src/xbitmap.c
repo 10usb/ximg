@@ -4,30 +4,30 @@
 #include <stdlib.h>
 
 struct xbitmap_file {
-  unsigned int size;            // (4 bytes),
-  unsigned int reserved;        // (4 bytes),
-  unsigned int offset;          // (4 bytes), offset to the data
+  uint32_t size;            // (4 bytes),
+  uint32_t reserved;        // (4 bytes),
+  uint32_t offset;          // (4 bytes), offset to the data
 } __attribute__((__packed__));
 
 struct xbitmap_header {
-  unsigned int size;
-  unsigned int width;
-  unsigned int height;
-  unsigned short planes;
-  unsigned short bits;      // 1,4,8,24,32
-  unsigned int compression;
-  unsigned int data_size;
-  unsigned int xppm;
-  unsigned int yppm;
-  unsigned int colors;
-  unsigned int important;
+  uint32_t size;
+  uint32_t width;
+  uint32_t height;
+  uint16_t planes;
+  uint16_t bits;      // 1,4,8,24,32
+  uint32_t compression;
+  uint32_t data_size;
+  uint32_t xppm;
+  uint32_t yppm;
+  uint32_t colors;
+  uint32_t important;
 } __attribute__((__packed__));
 
 struct xbitmap_rgba {
-  unsigned char b;
-  unsigned char g;
-  unsigned char r;
-  unsigned char a;
+  uint8_t b;
+  uint8_t g;
+  uint8_t r;
+  uint8_t a;
 } __attribute__((__packed__));
 
 struct ximg * xbitmap_load(const char * filename){
@@ -35,7 +35,7 @@ struct ximg * xbitmap_load(const char * filename){
     if(!f) return 0;
 
     fseek(f, 0, SEEK_END);
-    unsigned int size = ftell(f);
+    long size = ftell(f);
     fseek(f, 0, SEEK_SET);
 
     if(size < (2 + sizeof(struct xbitmap_file) + sizeof(struct xbitmap_header))){
@@ -43,7 +43,7 @@ struct ximg * xbitmap_load(const char * filename){
         return 0;
     }
 
-    unsigned short id;
+    uint16_t id;
     fread(&id, 2, 1, f);
 
     if(id != 0x4D42){
@@ -138,7 +138,7 @@ struct ximg * xbitmap_load(const char * filename){
     return image;
 }
 
-int xbitmap_save(struct ximg * image, unsigned short index, const char * filename, unsigned char bits){
+int xbitmap_save(struct ximg * image, uint16_t index, const char * filename, uint8_t bits){
     struct xreader reader;
     if(!xreader_init(&reader, image, index)) return 0;
 

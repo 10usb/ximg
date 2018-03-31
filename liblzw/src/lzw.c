@@ -88,7 +88,7 @@ static inline int lzw_bits(struct lzw_info * info){
   return bits;
 }
 
-int lzw_decode(struct lzw_info * info, unsigned char data, int * count){
+int lzw_decode(struct lzw_info * info, uint8_t data, int * count){
   // Store the new data and the end of the buffer
   info->buffer[(info->offset + info->length) / 8] = data;
 

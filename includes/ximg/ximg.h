@@ -3,29 +3,42 @@
 
 /**
  * The Ximg file format is flexible by design. The base is no more and no less
- * then a header followed by chunks that can vary in data. The actual content
- * can be found by special chunks that define the contents.
+ * then a header followed by chunks that can vary in data and size. The actual
+ * content can be found by special chunks that define the contents.
  */
+
+#include <stdint.h>
 
 /**
  * File header
  */
 struct ximg_header {
-    char fileid[8];         // 8 bytes
-    unsigned int size;      // 4 bytes
-    unsigned int checksum;  // 4 bytes
-    unsigned short chunks;  // 2 bytes
-    unsigned short flags;   // 2 bytes
+    uint8_t fileid[8];  // 8 bytes
+    uint32_t size;      // 4 bytes
+    uint32_t checksum;  // 4 bytes
+    uint16_t chunks;    // 2 bytes
+    uint16_t flags;     // 2 bytes
 } __attribute__((__packed__));
+
+
+/**
+ * Identifier type of chunks
+ */
+typedef uint32_t ximgid_t;
+
+/**
+ * Identifier of types
+ */
+typedef uint32_t ximgtype_t;
 
 /**
  * Chunk
  */
 struct xchu {
-    unsigned int size;      // 4 bytes
-    unsigned int type;      // 4 bytes
-    unsigned int id;        // 4 bytes
-    unsigned int checksum;  // 4 bytes
+    uint32_t size;      // 4 bytes
+    ximgtype_t type;    // 4 bytes
+    ximgid_t id;        // 4 bytes
+    uint32_t checksum;  // 4 bytes
 };
 
 /**
@@ -60,22 +73,22 @@ int ximg_save(struct ximg * image, const char * filename);
  * Adds a new chunk to the image with the given size en type
  * @remarks type can be generated with ximg_make function
  */
-unsigned int ximg_add(struct ximg * image, unsigned int size, unsigned int type);
+ximgid_t ximg_add(struct ximg * image, uint32_t size, ximgtype_t type);
 
 /**
  * Returns a chunk with the given id if it exists, otherwise returns 0
  */
-struct xchu * ximg_get(struct ximg * image, unsigned int id);
+struct xchu * ximg_get(struct ximg * image, ximgid_t id);
 
 /**
  * Find a chunk of given type at given offset otherwise 0
  */
-struct xchu * ximg_find(struct ximg * image, unsigned int type, unsigned short offset);
+struct xchu * ximg_find(struct ximg * image, ximgtype_t type, uint16_t offset);
 
 /**
  * Converts a string to a number type identifier
  */
-unsigned int ximg_make(const char * type);
+ximgtype_t ximg_make(const char * type);
 
 /**
  * Retruns the contents of a chunk

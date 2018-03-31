@@ -8,7 +8,14 @@
 
 #include <ximg/ximg.h>
 
+/**
+ * Load a gif file
+ */
 struct ximg * xgif_load(const char * filename);
-int xgif_save(struct ximg * image, unsigned int id, const char * filename, unsigned char bits);
+
+/**
+ * Save an mapped image or an animation with only mapped images
+ */
+int xgif_save(struct ximg * image, ximgid_t id, const char * filename);
 
 #endif
