@@ -7,7 +7,6 @@
 
 #include <ximg/ximg.h>
 #include <ximg/xras.h>
-#include <ximg/xchan.h>
 #include <ximg/xtypes.h>
 
 struct xreader {

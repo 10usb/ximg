@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-int xwriter_create(struct xwriter * writer, struct ximg * image, unsigned short width, unsigned short height, unsigned int type){
+int xwriter_create(struct xwriter * writer, struct ximg * image, uint16_t width, uint16_t height, ximgtype_t type){
     writer->image   = image;
     writer->width   = width;
     writer->height  = height;
@@ -17,7 +17,7 @@ int xwriter_create(struct xwriter * writer, struct ximg * image, unsigned short 
     return 1;
 }
 
-int xwriter_open(struct xwriter * writer, struct ximg * image, unsigned int id){
+int xwriter_open(struct xwriter * writer, struct ximg * image, uint16_t index){
     writer->image = image;
 
 }

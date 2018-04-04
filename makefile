@@ -1,8 +1,7 @@
 # Workspace
 OUTPUT=bin
 TEMP=obj
-#TOOLS=xbitmap ximg
-TOOLS=xgif
+TOOLS=ximg xbitmap xgif
 LIBS=libximg libxras libxbitmap liblzw libxgif
 
 ifeq ($(OS),Windows_NT)

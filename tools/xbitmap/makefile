@@ -1,29 +1,39 @@
 # Ximg bitmap converter
 include ../../makefile.in
+OUTPUT=bin/xbitmap
 SOURCES=main.c
-OBJECTS=$(SOURCES:.c=.o)
-ifeq ($(OS),Windows_NT)
-    TARGET=xbitmap.exe
-else
-	TARGET=xbitmap
-endif
-INCLUDES=-I../../includes
 DEPENDANCIES=libximg libxras libxbitmap
-LIBS=$(foreach x, $(DEPENDANCIES), ../../$(x)/$(x).o)
+TEMP=obj
+OBJECTS=$(SOURCES:%.c=$(TEMP)/%.o)
+ifeq ($(OS),Windows_NT)
+    TARGET=$(OUTPUT).exe
+else
+	TARGET=$(OUTPUT)
+endif
+CFLAGS=-I$(INCLUDES)
+LIBS=$(foreach x, $(DEPENDANCIES), $(ROOT)obj/$(x).o)
 
-all: dependencies $(TARGET)
+build: $(TARGET)
 
-$(TARGET): $(OBJECTS) $(LIBS)
-	$(CC) -Wall -o $@ $(OBJECTS) $(LIBS)
-
-%.o: %.c
-	$(CC) -c $(INCLUDES) $<
+rebuild: clean dependencies $(TARGET)
 
 clean:
 	$(RM) $(TARGET) $(OBJECTS)
 
+$(TARGET): $(OBJECTS) $(LIBS) | $(dir $(TARGET))
+	@echo "$(CC) -Wall -o $@ $(OBJECTS) <$(DEPENDANCIES)>"
+	@$(CC) -Wall -o $@ $(OBJECTS) $(LIBS)
+
+$(TEMP)/%.o: src/%.c | $(TEMP)
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+$(TEMP) $(dir $(TARGET)):
+	mkdir $@
+
+$(LIBS):
+	@$(MAKE) --no-print-directory -C $(@:$(ROOT)obj/%.o=$(ROOT)%) OUTPUT=$@
+
 dependencies:
-	$(foreach x,$(DEPENDANCIES:%=../../%),$(MAKE) -C $(x);)
+	@$(foreach x,$(DEPENDANCIES),$(MAKE) --no-print-directory -C $(ROOT)$(x) OUTPUT=$(ROOT)obj/$(x).o;)
 
-
-.PHONY: clean all dependencies
+.PHONY: build rebuild clean dependencies

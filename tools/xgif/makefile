@@ -20,11 +20,11 @@ rebuild: clean dependencies $(TARGET)
 clean:
 	$(RM) $(TARGET) $(OBJECTS)
 
-$(TARGET): $(dir $(TARGET)) $(TEMP) $(OBJECTS) $(LIBS)
+$(TARGET): $(OBJECTS) $(LIBS) | $(dir $(TARGET))
 	@echo "$(CC) -Wall -o $@ $(OBJECTS) <$(DEPENDANCIES)>"
 	@$(CC) -Wall -o $@ $(OBJECTS) $(LIBS)
 
-$(TEMP)/%.o: src/%.c
+$(TEMP)/%.o: src/%.c | $(TEMP)
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 $(TEMP) $(dir $(TARGET)):

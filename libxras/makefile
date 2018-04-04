@@ -1,7 +1,7 @@
 # Library Ximg Raster
 include ../makefile.in
 OUTPUT=bin/libxras.o
-SOURCES=xras.c xchan.c xreader.c xwriter.c xmap.c
+SOURCES=xras.c xchan.c xreader.c xwriter.c xmap.c xtranslate.c
 TEMP=obj
 
 OBJECTS=$(SOURCES:%.c=$(TEMP)/%.o)
