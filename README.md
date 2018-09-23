@@ -14,3 +14,58 @@ images to be saved in a single file. Even allow the images to share the same
 resources within the file. This is accomplished by splitting the contents in
 small containers that have no direct interaction with each other unless
 specified.
+
+## File support
+ - Bitmap (.bmp) - with 24bit or 32bit colors
+ - Graphics Interchange Format (.gif) - only single image decoding
+
+## Creating a Ximg
+```c
+struct ximg * image = ximg_create();
+
+ximgid_t raster_id = xras_create(image, 150, 100, ximg_make("RGB8"), 3);
+
+struct xras * raster = xras_get_by_id(image, raster_id);
+
+struct xchan * r = xras_channel(image, raster, 0);
+struct xchan * g = xras_channel(image, raster, 1);
+struct xchan * b = xras_channel(image, raster, 2);
+
+for(int y = 0; y < 100; y++){
+    for(int y = 0; y < 150; y++){
+        xchan_set8(r, x, y, (x * 256 / 150) % 256);
+        xchan_set8(g, x, y, (y * 256 / 100) % 256);
+        xchan_set8(b, x, y, ((x * 256 / 150)  + (y * 256 / 100)) % 256);
+    }
+}
+
+ximg_save(image, "pretty-image.ximg");
+ximg_free(image);
+```
+
+## Loading and reading an Ximg
+```c
+struct ximg * image;
+if(image = ximg_load("pretty-image.ximg")){
+    struct xreader reader;
+    // Init a reader loaded with the first raster image (index 0)
+    if(!xreader_init(&reader, image, 0)) return 0;
+
+    struct xpixel xpixel;
+    xreader_rgba(&reader, 50, 50, &xpixel);
+
+    // xpixel.r = 0x55
+    // xpixel.g = 0x80
+    // xpixel.b = 0xD5
+    
+    xreader_clear(&reader);
+    ximg_free(image);
+}
+```
+
+## Wishes to be added
+ - Full Bitmap support
+ - Conversion of 24bit to an mapped color image using dithering
+ - Animated GIF
+ - Loading and saving of Portable Network Graphics (.png)
+ - Loading of Joint Photographic Experts Group (.jpeg, .jpg)
