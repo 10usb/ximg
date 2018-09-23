@@ -67,6 +67,7 @@ struct ximg * ximg_load(const char * filename){
 }
 
 int ximg_save(struct ximg * image, const char * filename){
+    if(!image) return 0;
     FILE * f = fopen(filename, "wb");
     if(!f) return 0;
 

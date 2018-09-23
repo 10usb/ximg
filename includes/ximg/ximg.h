@@ -60,6 +60,16 @@ struct ximg * ximg_create();
 void ximg_free(struct ximg * image);
 
 /**
+ * Extracts an image from a memory buffer
+ */
+struct ximg * ximg_extract(const void * source, uint32_t size);
+
+/**
+ * Dumps the image to a memory buffer
+ */
+int ximg_dump(struct ximg * image, void * destination, uint32_t size);
+
+/**
  * Loads an image from a file
  */
 struct ximg * ximg_load(const char * filename);
