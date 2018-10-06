@@ -21,16 +21,21 @@ specified.
 
 ## Creating a Ximg
 ```c
+// Empty image in memory
 struct ximg * image = ximg_create();
 
+// Create a 24bit RGB raster image
 ximgid_t raster_id = xras_create(image, 150, 100, ximg_make("RGB8"), 3);
 
+// Get the memory pointer to that raster image
 struct xras * raster = xras_get_by_id(image, raster_id);
 
+// Extract the pointers to each of the color channels
 struct xchan * r = xras_channel(image, raster, 0);
 struct xchan * g = xras_channel(image, raster, 1);
 struct xchan * b = xras_channel(image, raster, 2);
 
+// Set some pretty colors
 for(int y = 0; y < 100; y++){
     for(int y = 0; y < 150; y++){
         xchan_set8(r, x, y, (x * 256 / 150) % 256);
@@ -39,18 +44,23 @@ for(int y = 0; y < 100; y++){
     }
 }
 
+// Save it to disk
 ximg_save(image, "pretty-image.ximg");
+
+// We don't like leaks
 ximg_free(image);
 ```
 
 ## Loading and reading an Ximg
 ```c
-struct ximg * image;
-if(image = ximg_load("pretty-image.ximg")){
+// Load the image from file
+struct ximg * image = ximg_load("pretty-image.ximg");
+if(image){
     struct xreader reader;
     // Init a reader loaded with the first raster image (index 0)
     if(!xreader_init(&reader, image, 0)) return 0;
 
+    // Now tell the reader we want a pixel at position left,top 50,50
     struct xpixel xpixel;
     xreader_rgba(&reader, 50, 50, &xpixel);
 
@@ -58,6 +68,7 @@ if(image = ximg_load("pretty-image.ximg")){
     // xpixel.g = 0x80
     // xpixel.b = 0xD5
     
+    // Make sure any memory allocated by the reader is made free
     xreader_clear(&reader);
     ximg_free(image);
 }
