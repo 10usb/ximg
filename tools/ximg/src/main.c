@@ -4,7 +4,7 @@
 #include <ximg/ximg.h>
 #include <ximg/xwriter.h>
 
-int ximg_append(int argc, const char ** argv){
+int action_append(int argc, const char ** argv){
     puts("append enzo");
     return 0;
 }
@@ -18,7 +18,7 @@ int help_extract(int ret){
     puts("  --type=<n>      - type of the instance to perform the acion on (default:xras)");
 }
 
-int ximg_extract(int argc, const char ** argv){
+int action_extract(int argc, const char ** argv){
     if(argc < 4) return help_extract(-3);
 
     unsigned short index = 0;
@@ -78,7 +78,7 @@ int ximg_extract(int argc, const char ** argv){
     return 0;
 }
 
-int ximg_remove(int argc, const char ** argv){
+int action_remove(int argc, const char ** argv){
     puts("remove enzo");
     return 0;
 }
@@ -104,11 +104,11 @@ int main(int argc, const char ** argv){
     if(strcmp(argv[1], "help") == 0 || strcmp(argv[1], "--help") == 0){
         return help(0);
     }else if(strcmp(argv[1], "append") == 0){
-        return ximg_append(argc, argv);
+        return action_append(argc, argv);
     }else if(strcmp(argv[1], "extract") == 0){
-        return ximg_extract(argc, argv);
+        return action_extract(argc, argv);
     }else if(strcmp(argv[1], "remove") == 0){
-        return ximg_remove(argc, argv);
+        return action_remove(argc, argv);
     }else{
         fprintf(stderr, "Invalid action '%s'\n", argv[1]);
         return -2;
