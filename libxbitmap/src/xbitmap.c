@@ -1,4 +1,5 @@
 #include <ximg/xreader.h>
+#include <ximg/xmap.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -29,6 +30,46 @@ struct xbitmap_rgba {
   uint8_t r;
   uint8_t a;
 } __attribute__((__packed__));
+
+struct xbitmap_reader {
+    uint32_t offset;
+    int bits;
+    uint32_t scanline;
+    int position;
+    uint32_t buffer;
+};
+
+void xbitmap_reader_init(struct xbitmap_reader * reader, uint32_t offset, int bits, uint32_t width){
+    reader->offset = offset;
+    reader->bits = bits;
+    reader->scanline = bits * width + 31 - (bits * width - 1) % 32;
+    reader->position = bits;
+}
+
+void xbitmap_reader_nextline(struct xbitmap_reader * reader, FILE * f){
+    long position = ftell(f);
+    long remain = (position - reader->offset) % reader->scanline;
+    if(remain > 0) fseek(f, reader->scanline - remain, SEEK_CUR);
+    reader->position = reader->bits;
+}
+
+int xbitmap_read_32bit_le(FILE * f, uint32_t * value){
+    // for now assume we are compiling on a great system
+    return fread(value, sizeof(uint32_t), 1, f);
+}
+
+uint32_t xbitmap_reader_next(struct xbitmap_reader * reader, FILE * f){
+    uint32_t value = reader->buffer >> reader->position;
+    reader->position+= reader->bits;
+
+    if(reader->position >= 32){
+        reader->position-= 32;
+        xbitmap_read_32bit_le(f, &reader->buffer);
+        
+        if(reader->position > 0) value |= reader->buffer << (32 - reader->position);
+    }
+    return value & ((1 << reader->bits)  - 1);
+}
 
 struct ximg * xbitmap_load(const char * filename){
     FILE * f = fopen(filename, "rb");
@@ -72,10 +113,11 @@ struct ximg * xbitmap_load(const char * filename){
         return 0;
     }
 
-    struct ximg * image = ximg_create();
+    struct ximg * image = 0;
 
     switch(header.bits){
         case 32:{
+            image = ximg_create();
             unsigned int raster_index = xras_create(image, header.width, header.height, ximg_make("RGBA"), 4);
 
             struct xras * raster = xras_get_by_id(image, raster_index);
@@ -105,6 +147,7 @@ struct ximg * xbitmap_load(const char * filename){
             }
         }break;
         case 24:{
+            image = ximg_create();
             unsigned short raster_index = xras_create(image, header.width, header.height, ximg_make("RGB8"), 3);
 
             struct xras * raster = xras_get_by_id(image, raster_index);
@@ -131,6 +174,79 @@ struct ximg * xbitmap_load(const char * filename){
                 y--;
             }
         }break;
+        default:
+            if(!header.compression){
+                image = ximg_create();
+
+                ximgid_t palette_id = xpal_create(image, XPAL_RGB8, header.colors);
+                if(!palette_id) {
+                    ximg_free(image);
+                    fclose(f);
+                    return 0;
+                }
+
+                struct xpal * palette = xpal_get_by_id(image, palette_id);
+                if(!palette){
+                    ximg_free(image);
+                    fclose(f);
+                    return 0;
+                }
+
+                struct xpixel color;
+                for(int i = 0; i < header.colors; i++){
+                    if(!fread(&color, 4, 1, f)){
+                        ximg_free(image);
+                        fclose(f);
+                        return 0;
+                    }
+                    xpal_set_rgb(palette, i, &color);
+                }
+
+                fseek(f, file.offset, SEEK_SET);
+                unsigned int x, y = header.height - 1;
+                struct xbitmap_rgba pixel;
+
+                struct xbitmap_reader reader;
+                xbitmap_reader_init(&reader, file.offset, header.bits, header.width);
+
+                ximgid_t mapped_id = xmap_create_with_palette(image, header.width, header.height, palette_id);
+                if(!mapped_id){
+                    ximg_free(image);
+                    fclose(f);
+                    return 0;
+                }
+
+                struct xchan * channel = xmap_channel(image, xmap_get_by_id(image, mapped_id));
+
+                for(;;){
+                    xbitmap_reader_nextline(&reader, f);
+                    x = 0;
+                    while(x < header.width){
+                        uint32_t index = xbitmap_reader_next(&reader, f);
+						xchan_set8(channel, x, y, index);
+                        x++;
+                    }
+                    if(y == 0) break;
+                    y--;
+                }
+
+            }else{
+                printf("file size  : %d\n", file.size);
+                printf("offset     : %d\n", file.offset);
+
+                printf("size       : %d\n", header.size);
+                printf("width      : %d\n", header.width);
+                printf("height     : %d\n", header.height);
+                printf("planes     : %d\n", header.planes);
+                printf("bits       : %d\n", header.bits);
+                printf("compression: %d\n", header.compression);
+                printf("data_size  : %d\n", header.data_size);
+                printf("xppm       : %d\n", header.xppm);
+                printf("yppm       : %d\n", header.yppm);
+                printf("colors     : %d\n", header.colors);
+                printf("important  : %d\n", header.important);
+            }
+        break;
     }
 
     fclose(f);
