@@ -36,39 +36,52 @@ struct xbitmap_reader {
     int bits;
     uint32_t scanline;
     int position;
-    uint32_t buffer;
+    uint8_t buffer;
+    uint8_t mask;
 };
 
 void xbitmap_reader_init(struct xbitmap_reader * reader, uint32_t offset, int bits, uint32_t width){
     reader->offset = offset;
     reader->bits = bits;
-    reader->scanline = bits * width + 31 - (bits * width - 1) % 32;
-    reader->position = bits;
+    reader->scanline = (bits * width + 31 - (bits * width - 1) % 32) / 8;
+    reader->position = 0;
+    reader->buffer = 0;
+    reader->mask = (1 << bits)  - 1;
 }
 
 void xbitmap_reader_nextline(struct xbitmap_reader * reader, FILE * f){
     long position = ftell(f);
     long remain = (position - reader->offset) % reader->scanline;
     if(remain > 0) fseek(f, reader->scanline - remain, SEEK_CUR);
-    reader->position = reader->bits;
+    reader->position = 0;
 }
 
-int xbitmap_read_32bit_le(FILE * f, uint32_t * value){
-    // for now assume we are compiling on a great system
-    return fread(value, sizeof(uint32_t), 1, f);
-}
 
 uint32_t xbitmap_reader_next(struct xbitmap_reader * reader, FILE * f){
-    uint32_t value = reader->buffer >> reader->position;
-    reader->position+= reader->bits;
+    if(reader->bits == 8){
+        uint8_t value;
+        fread(&value, sizeof(uint8_t), 1, f);
+        return value;
+    }else{
+        uint8_t value;
 
-    if(reader->position >= 32){
-        reader->position-= 32;
-        xbitmap_read_32bit_le(f, &reader->buffer);
+        reader->position-= reader->bits;
+
+        if(reader->position < 0){
+            value = reader->buffer << (0 - reader->position);
+
+            fread(&reader->buffer, sizeof(uint8_t), 1, f);
+            
+            uint8_t mask = (1 << (0 - reader->position))  - 1;
+            value|= (reader->buffer >> (reader->position + 8)) & mask;
+
+            reader->position+= 8;
+        }else{
+            value = reader->buffer >> reader->position;
+        }
         
-        if(reader->position > 0) value |= reader->buffer << (32 - reader->position);
+        return value & reader->mask;
     }
-    return value & ((1 << reader->bits)  - 1);
 }
 
 struct ximg * xbitmap_load(const char * filename){
@@ -160,7 +173,10 @@ struct ximg * xbitmap_load(const char * filename){
             unsigned int x, y = header.height - 1;
             struct xbitmap_rgba pixel;
 
+            struct xbitmap_reader reader;
+            xbitmap_reader_init(&reader, file.offset, header.bits, header.width);
             for(;;){
+                xbitmap_reader_nextline(&reader, f);
                 x = 0;
                 while(x < header.width){
                     fread(&pixel, 3, 1, f);
@@ -206,8 +222,6 @@ struct ximg * xbitmap_load(const char * filename){
                 unsigned int x, y = header.height - 1;
                 struct xbitmap_rgba pixel;
 
-                struct xbitmap_reader reader;
-                xbitmap_reader_init(&reader, file.offset, header.bits, header.width);
 
                 ximgid_t mapped_id = xmap_create_with_palette(image, header.width, header.height, palette_id);
                 if(!mapped_id){
@@ -218,6 +232,8 @@ struct ximg * xbitmap_load(const char * filename){
 
                 struct xchan * channel = xmap_channel(image, xmap_get_by_id(image, mapped_id));
 
+                struct xbitmap_reader reader;
+                xbitmap_reader_init(&reader, file.offset, header.bits, header.width);
                 for(;;){
                     xbitmap_reader_nextline(&reader, f);
                     x = 0;
