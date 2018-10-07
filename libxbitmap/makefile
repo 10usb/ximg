@@ -1,7 +1,7 @@
 # Library Ximg Bitmap
 include ../makefile.in
 OUTPUT=bin/libxbitmap.o
-SOURCES=xbitmap.c
+SOURCES=load.c save.c
 TEMP=obj
 
 OBJECTS=$(SOURCES:%.c=$(TEMP)/%.o)
