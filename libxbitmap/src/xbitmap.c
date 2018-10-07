@@ -1,44 +1,10 @@
+#include <ximg/xbitmap.h>
 #include <ximg/xreader.h>
 #include <ximg/xmap.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-struct xbitmap_file {
-  uint32_t size;            // (4 bytes),
-  uint32_t reserved;        // (4 bytes),
-  uint32_t offset;          // (4 bytes), offset to the data
-} __attribute__((__packed__));
-
-struct xbitmap_header {
-  uint32_t size;
-  uint32_t width;
-  uint32_t height;
-  uint16_t planes;
-  uint16_t bits;      // 1,4,8,24,32
-  uint32_t compression;
-  uint32_t data_size;
-  uint32_t xppm;
-  uint32_t yppm;
-  uint32_t colors;
-  uint32_t important;
-} __attribute__((__packed__));
-
-struct xbitmap_rgba {
-  uint8_t b;
-  uint8_t g;
-  uint8_t r;
-  uint8_t a;
-} __attribute__((__packed__));
-
-struct xbitmap_reader {
-    uint32_t offset;
-    int bits;
-    uint32_t scanline;
-    int position;
-    uint8_t buffer;
-    uint8_t mask;
-};
+#include "bitmap.h"
 
 void xbitmap_reader_init(struct xbitmap_reader * reader, uint32_t offset, int bits, uint32_t width){
     reader->offset = offset;
@@ -270,7 +236,8 @@ struct ximg * xbitmap_load(const char * filename){
     return image;
 }
 
-int xbitmap_save(struct ximg * image, uint16_t index, const char * filename, uint8_t bits){
+
+int xbitmap_raster_save(struct ximg * image, uint16_t index, const char * filename, uint8_t bits){
     struct xreader reader;
     if(!xreader_init(&reader, image, index)) return 0;
 
@@ -287,8 +254,6 @@ int xbitmap_save(struct ximg * image, uint16_t index, const char * filename, uin
             xreader_clear(&reader);
         }return 0;
     }
-
-
 
     struct xbitmap_file file;
     memset(&file, 0, sizeof(struct xbitmap_file));
@@ -359,4 +324,61 @@ int xbitmap_save(struct ximg * image, uint16_t index, const char * filename, uin
     fclose(f);
 
     return 1;
+}
+
+int xbitmap_mapped_save(struct ximg * image, uint16_t index, const char * filename, uint8_t bits){
+    struct xmap * mapped = xmap_get_by_index(image, index);
+    if(!mapped) return 0;
+
+    struct xpal * palette = xmap_palette(image, mapped);
+    if(!palette) return 0;
+
+    struct xchan * channel = xmap_channel(image, mapped);
+    if(!channel) return 0;
+    
+
+    unsigned short scanline = 0, padding = 0;
+    scanline = (bits * channel->width + 31 - (bits * channel->width - 1) % 32) / 8;
+    padding = scanline - ((bits * channel->width + 7 - (bits * channel->width - 1) % 8) / 8);
+
+    struct xbitmap_file file;
+    memset(&file, 0, sizeof(struct xbitmap_file));
+    file.offset        = 2 + sizeof(struct xbitmap_file) + sizeof(struct xbitmap_header);
+
+    struct xbitmap_header header;
+    memset(&header, 0, sizeof(struct xbitmap_header));
+    header.size         = sizeof(struct xbitmap_header);
+    header.width        = channel->width;
+    header.height       = channel->height;
+    header.planes       = 1;
+    header.bits         = bits;
+    header.data_size    = scanline * channel->height;
+    header.xppm         = 2834; // 72dpi
+    header.yppm         = 2834; // 72dpi
+    header.colors       = 1 << bits;
+    header.important    = palette->size;
+
+    file.offset        += header.colors * 4;
+    file.size           = file.offset + header.data_size;
+
+    FILE * f = fopen(filename, "wb");
+    if(!f) return 0;
+
+    unsigned short id = 0x4D42;
+    fwrite(&id, 2, 1, f);
+    fwrite(&file, sizeof(struct xbitmap_file), 1, f);
+    fwrite(&header, sizeof(struct xbitmap_header), 1, f);
+
+    
+    fclose(f);
+
+    return 1;
+}
+
+int xbitmap_save(struct ximg * image, uint16_t index, const char * filename, uint8_t bits){
+    if(bits > 8){
+        return xbitmap_raster_save(image, index, filename, bits);
+    }
+
+    return xbitmap_mapped_save(image, index, filename, bits);
 }
