@@ -52,7 +52,6 @@ int xbitmap_raster_save(struct ximg * image, uint16_t index, const char * filena
     fwrite(&file, sizeof(struct xbitmap_file), 1, f);
     fwrite(&header, sizeof(struct xbitmap_header), 1, f);
 
-
     unsigned int x, y = header.height - 1;
     struct xpixel xpixel;
     struct xbitmap_rgba bpixel;
@@ -89,7 +88,6 @@ int xbitmap_raster_save(struct ximg * image, uint16_t index, const char * filena
         }
     }
 
-
     fclose(f);
 
     return 1;
@@ -101,10 +99,12 @@ int xbitmap_mapped_save(struct ximg * image, uint16_t index, const char * filena
 
     struct xpal * palette = xmap_palette(image, mapped);
     if(!palette) return 0;
+    
+    int colors = 1 << bits;
+    if(palette->size > colors) return 0;
 
     struct xchan * channel = xmap_channel(image, mapped);
     if(!channel) return 0;
-    
 
     unsigned short scanline = 0, padding = 0;
     scanline = (bits * channel->width + 31 - (bits * channel->width - 1) % 32) / 8;
@@ -124,10 +124,10 @@ int xbitmap_mapped_save(struct ximg * image, uint16_t index, const char * filena
     header.data_size    = scanline * channel->height;
     header.xppm         = 2834; // 72dpi
     header.yppm         = 2834; // 72dpi
-    header.colors       = 1 << bits;
+    header.colors       = palette->size;
     header.important    = palette->size;
 
-    file.offset        += header.colors * 4;
+    file.offset        += colors * 4;
     file.size           = file.offset + header.data_size;
 
     FILE * f = fopen(filename, "wb");
@@ -138,6 +138,38 @@ int xbitmap_mapped_save(struct ximg * image, uint16_t index, const char * filena
     fwrite(&file, sizeof(struct xbitmap_file), 1, f);
     fwrite(&header, sizeof(struct xbitmap_header), 1, f);
 
+    struct xpixel xpixel;
+    struct xbitmap_rgba bpixel;
+    bpixel.a = 0;
+
+    for(int index = 0; index < colors; index++){
+        if(xpal_get_rgb(palette, index, &xpixel)){
+            bpixel.r = xpixel.r;
+            bpixel.g = xpixel.g;
+            bpixel.b = xpixel.b;
+        }else{
+            bpixel.r = 0;
+            bpixel.g = 0;
+            bpixel.b = 0;
+        }
+        if(!fwrite(&bpixel, 4, 1, f)) return 0;
+    }
+
+    unsigned int x, y = header.height - 1;
+    struct bitmap_stream stream;
+    bitmap_stream_init(&stream, file.offset, header.bits, header.width);
+    for(;;){
+        bitmap_stream_align_write(&stream, f);
+        x = 0;
+        while(x < header.width){
+            uint8_t index = xchan_get8(channel, x, y);
+            if(!bitmap_stream_write(&stream, f, index)) return 0;
+            x++;
+        }
+        if(y == 0) break;
+        y--;
+    }
+    bitmap_stream_align_write(&stream, f);
     
     fclose(f);
 

@@ -6,50 +6,6 @@
 #include <stdlib.h>
 #include "bitmap.h"
 
-void xbitmap_reader_init(struct xbitmap_reader * reader, uint32_t offset, int bits, uint32_t width){
-    reader->offset = offset;
-    reader->bits = bits;
-    reader->scanline = (bits * width + 31 - (bits * width - 1) % 32) / 8;
-    reader->position = 0;
-    reader->buffer = 0;
-    reader->mask = (1 << bits)  - 1;
-}
-
-void xbitmap_reader_nextline(struct xbitmap_reader * reader, FILE * f){
-    long position = ftell(f);
-    long remain = (position - reader->offset) % reader->scanline;
-    if(remain > 0) fseek(f, reader->scanline - remain, SEEK_CUR);
-    reader->position = 0;
-}
-
-
-uint32_t xbitmap_reader_next(struct xbitmap_reader * reader, FILE * f){
-    if(reader->bits == 8){
-        uint8_t value;
-        fread(&value, sizeof(uint8_t), 1, f);
-        return value;
-    }else{
-        uint8_t value;
-
-        reader->position-= reader->bits;
-
-        if(reader->position < 0){
-            value = reader->buffer << (0 - reader->position);
-
-            fread(&reader->buffer, sizeof(uint8_t), 1, f);
-            
-            uint8_t mask = (1 << (0 - reader->position))  - 1;
-            value|= (reader->buffer >> (reader->position + 8)) & mask;
-
-            reader->position+= 8;
-        }else{
-            value = reader->buffer >> reader->position;
-        }
-        
-        return value & reader->mask;
-    }
-}
-
 static inline int xbitmap_load_headers(FILE * f, struct xbitmap_file * file, struct xbitmap_header * header){
     fseek(f, 0, SEEK_END);
     long size = ftell(f);
@@ -91,10 +47,10 @@ static inline int xbitmap_load_raster_24bit(FILE * f, struct xbitmap_file * file
     unsigned int x, y = header->height - 1;
     struct xbitmap_rgba pixel;
 
-    struct xbitmap_reader reader;
-    xbitmap_reader_init(&reader, file->offset, header->bits, header->width);
+    struct bitmap_stream stream;
+    bitmap_stream_init(&stream, file->offset, header->bits, header->width);
     for(;;){
-        xbitmap_reader_nextline(&reader, f);
+        bitmap_stream_align_read(&stream, f);
         x = 0;
         while(x < header->width){
             fread(&pixel, 3, 1, f);
@@ -151,16 +107,21 @@ static inline int xbitmap_load_raster(FILE * f, struct xbitmap_file * file, stru
 }
 
 static inline int xbitmap_load_mapped(FILE * f, struct xbitmap_file * file, struct xbitmap_header * header, struct ximg * image){
-    ximgid_t palette_id = xpal_create(image, XPAL_RGB8, header->colors);
+    int colors = header->colors > 0 ? header->colors : 1 << header->bits;
+    ximgid_t palette_id = xpal_create(image, XPAL_RGB8, colors);
     if(!palette_id) return 0;
 
     struct xpal * palette = xpal_get_by_id(image, palette_id);
     if(!palette) return 0;
 
-    struct xpixel color;
-    for(int i = 0; i < header->colors; i++){
-        if(!fread(&color, 4, 1, f)) return 0; 
-        xpal_set_rgb(palette, i, &color);
+    struct xpixel xpixel;
+    struct xbitmap_rgba bpixel;
+    for(int i = 0; i < colors; i++){
+        if(!fread(&bpixel, 4, 1, f)) return 0;
+        xpixel.r = bpixel.r;
+        xpixel.g = bpixel.g;
+        xpixel.b = bpixel.b;
+        xpal_set_rgb(palette, i, &xpixel);
     }
 
     fseek(f, file->offset, SEEK_SET);
@@ -173,13 +134,14 @@ static inline int xbitmap_load_mapped(FILE * f, struct xbitmap_file * file, stru
 
     struct xchan * channel = xmap_channel(image, xmap_get_by_id(image, mapped_id));
 
-    struct xbitmap_reader reader;
-    xbitmap_reader_init(&reader, file->offset, header->bits, header->width);
+    struct bitmap_stream stream;
+    bitmap_stream_init(&stream, file->offset, header->bits, header->width);
     for(;;){
-        xbitmap_reader_nextline(&reader, f);
+        bitmap_stream_align_read(&stream, f);
         x = 0;
         while(x < header->width){
-            uint32_t index = xbitmap_reader_next(&reader, f);
+            uint8_t index;
+            if(!bitmap_stream_read(&stream, f, &index)) return 0;
             xchan_set8(channel, x, y, index);
             x++;
         }

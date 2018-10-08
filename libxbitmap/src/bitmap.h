@@ -5,6 +5,9 @@
  * Used in the .c file of this library to ease the handling of the bitmap file
  */
 
+#include <stdint.h>
+#include <stdio.h>
+
 struct xbitmap_file {
   uint32_t size;            // (4 bytes),
   uint32_t reserved;        // (4 bytes),
@@ -32,7 +35,7 @@ struct xbitmap_rgba {
   uint8_t a;
 } __attribute__((__packed__));
 
-struct xbitmap_reader {
+struct bitmap_stream {
     uint32_t offset;
     int bits;
     uint32_t scanline;
@@ -40,5 +43,13 @@ struct xbitmap_reader {
     uint8_t buffer;
     uint8_t mask;
 };
+
+void bitmap_stream_init(struct bitmap_stream * stream, uint32_t offset, int bits, uint32_t width);
+
+void bitmap_stream_align_read(struct bitmap_stream * stream, FILE * f);
+int bitmap_stream_read(struct bitmap_stream * stream, FILE * f, uint8_t * value);
+
+int bitmap_stream_align_write(struct bitmap_stream * stream, FILE * f);
+int bitmap_stream_write(struct bitmap_stream * stream, FILE * f, uint8_t value);
 
 #endif
