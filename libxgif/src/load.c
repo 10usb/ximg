@@ -7,7 +7,7 @@
 #include <compression/lzw.h>
 #include "gif.h"
 
-static inline unsigned int xgif_frame_count(FILE * f){
+static inline long xgif_frame_count(FILE * f){
 	return 1;
 }
 
@@ -22,15 +22,12 @@ static inline int xgif_read_block(FILE * f, void * buffer){
 	return length;
 }
 
-static inline unsigned int xgif_read_palette(struct ximg * image, FILE * f, int size){
+static inline ximgid_t xgif_read_palette(struct ximg * image, FILE * f, int size){
 	ximgid_t id = xpal_create(image, XPAL_RGB8, size);
 	if(!id) return 0;
 
 	struct xpal * palette = xpal_get_by_id(image, id);
-	if(!palette){
-		printf("Failed to get palete just created");
-		return 0;
-	}
+	if(!palette) return 0;
 
 	struct xpixel color;
 	for(int i = 0; i < size; i++){
@@ -43,23 +40,18 @@ static inline unsigned int xgif_read_palette(struct ximg * image, FILE * f, int 
 
 struct ximg * xgif_load(const char * filename){
 	FILE * f = fopen(filename, "rb");
-	if(!f) {
-		printf("File %s not found", filename);
-		return 0;
-	}
+	if(!f) return 0;
 
 	char identifier[6];
 	memset(&identifier, 0, 6);
 	fread(&identifier, 1, 6, f);
 	if(memcmp(&identifier, "GIF89a", 6) != 0){
-		printf("File not supported");
 		fclose(f);
 		return 0;
 	}
 
 	struct xgif_header header;
 	if(!fread(&header, sizeof(struct xgif_header), 1, f)){
-		printf("Failed to read header");
 		fclose(f);
 		return 0;
 	}
@@ -72,28 +64,27 @@ struct ximg * xgif_load(const char * filename){
 	printf("tableSize      : %d\n", 1 << (header.tableSize + 1));
 	printf("backgroundIndex: %d\n", header.backgroundIndex);
 	printf("pixelRatio     : %d\n", header.pixelRatio);
+	printf("-------------------\n");
 
     struct ximg * image = ximg_create();
 	if(!image) {
-		printf("Failed to create ximg");
+		fclose(f);
 		return 0;
 	}
 
-	unsigned int globalPalette = 0;
+	ximgid_t globalPalette = 0;
 
 	if(header.hasTable){
 		globalPalette = xgif_read_palette(image, f, 1 << (header.tableSize + 1));
 		if(!globalPalette){
-			printf("Failed to read palette");
 			ximg_free(image);
 			fclose(f);
 			return 0;
 		}
 	}
 
-	unsigned int frames = xgif_frame_count(f);
+	long frames = xgif_frame_count(f);
 	if(frames == 0){
-		printf("No image data found");
 		ximg_free(image);
 		fclose(f);
 		return 0;
@@ -135,7 +126,6 @@ struct ximg * xgif_load(const char * filename){
 	printf("tableSize      : %d\n", 1 << (fragment.tableSize + 1));
 	printf("reserved       : %d\n", fragment.reserved);
 	printf("minimumCodeSize: %d\n", fragment.minimumCodeSize);
-
 	printf("-------------------\n");
 
 	unsigned int palette;
