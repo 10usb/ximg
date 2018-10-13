@@ -3,55 +3,16 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ximg/xmap.h>
-#include <ximg/xbitmap.h>
 #include <ximg/xtypes.h>
 #include <compression/lzw.h>
-
-struct xgif_header {
-	unsigned short width;
-	unsigned short height;
-	union {
-		unsigned char flags;
-		struct {
-			unsigned char hasTable : 1;
-			unsigned char colorResolution : 3;
-			unsigned char sortFlag : 1;
-			unsigned char tableSize : 3;
-		} __attribute__((__packed__));
-	};
-	unsigned char backgroundIndex;
-	unsigned char pixelRatio;
-} __attribute__((__packed__));
-
-struct xgif_fragment {
-	unsigned short left;
-	unsigned short top;
-	unsigned short width;
-	unsigned short height;
-	union {
-		unsigned char flags;
-		struct {
-			unsigned char hasTable : 1;
-			unsigned char interlaced : 1;
-			unsigned char sortFlag : 1;
-			unsigned char reserved : 2;
-			unsigned char tableSize : 3;
-		} __attribute__((__packed__));
-	};
-	unsigned char minimumCodeSize;
-} __attribute__((__packed__));
-
-struct xgif_extension {
-	unsigned char type;
-	unsigned char size;
-} __attribute__((__packed__));
+#include "gif.h"
 
 static inline unsigned int xgif_frame_count(FILE * f){
 	return 1;
 }
 
 static inline int xgif_read_block(FILE * f, void * buffer){
-	unsigned char length;
+	uint8_t length;
 	fread(&length, 1, 1, f);
 
 	if(length > 0){
@@ -62,7 +23,7 @@ static inline int xgif_read_block(FILE * f, void * buffer){
 }
 
 static inline unsigned int xgif_read_palette(struct ximg * image, FILE * f, int size){
-	unsigned int id = xpal_create(image, XPAL_RGB8, size);
+	ximgid_t id = xpal_create(image, XPAL_RGB8, size);
 	if(!id) return 0;
 
 	struct xpal * palette = xpal_get_by_id(image, id);
@@ -78,6 +39,7 @@ static inline unsigned int xgif_read_palette(struct ximg * image, FILE * f, int 
 	}
 	return id;
 }
+
 
 struct ximg * xgif_load(const char * filename){
 	FILE * f = fopen(filename, "rb");
@@ -248,8 +210,4 @@ struct ximg * xgif_load(const char * filename){
 	fclose(f);
 
    	return image;
-}
-
-int xgif_save(struct ximg * image, ximgid_t id, const char * filename){
-
 }

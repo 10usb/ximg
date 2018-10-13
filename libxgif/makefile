@@ -1,7 +1,7 @@
 # Library Ximg Gif
 include ../makefile.in
 OUTPUT=bin/libxgif.o
-SOURCES=xgif.c
+SOURCES=load.c save.c
 TEMP=obj
 
 OBJECTS=$(SOURCES:%.c=$(TEMP)/%.o)
