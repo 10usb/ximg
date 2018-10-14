@@ -23,14 +23,14 @@ static inline long xgif_data_start(struct xgif_header * header){
 static inline int xgif_skip_blockchain(FILE * f){
 	uint8_t length;
 	do {
-		fread(&length, 1, 1, f);
+		if(!fread(&length, 1, 1, f)) return 0;
 
 		if(length > 0){
-			fseek(f, length, SEEK_CUR);
+			if(fseek(f, length, SEEK_CUR) != 0) return 0;
 		}
 	} while(length > 0);
 
-	return length;
+	return 1;
 }
 
 static inline int xgif_read_block(FILE * f, void * buffer){
@@ -123,7 +123,7 @@ static inline ximgid_t xgif_read_palette(struct ximg * image, FILE * f, int size
 	return id;
 }
 
-static inline int xgif_read_fragment(struct ximg * image, FILE * f, struct xgif_header * header, struct xgif_state * state){
+static inline int xgif_read_fragment(struct ximg * image, FILE * f, struct xgif_state * state){
 	struct xgif_fragment fragment;
 	if(!fread(&fragment, sizeof(struct xgif_fragment), 1, f)){
 		printf("Failed to read image\n");
@@ -154,7 +154,7 @@ static inline int xgif_read_fragment(struct ximg * image, FILE * f, struct xgif_
 		state->palettes.active = state->palettes.initial;
 	}
 
-	unsigned int mapped = xmap_create_with_palette(image, header->width, header->height, state->palettes.active);
+	ximgid_t mapped = xmap_create_with_palette(image, fragment.width, fragment.height, state->palettes.active);
 	if(!mapped){
 		printf("Failed to craate mapped\n");
 		return -1;
@@ -204,6 +204,18 @@ static inline int xgif_read_fragment(struct ximg * image, FILE * f, struct xgif_
 	printf("-------------------\n");
 
 	lzw_free(&info);
+}
+
+static inline int xgif_read_extension(struct ximg * image, FILE * f, struct xgif_state * state){
+	uint8_t code;
+	if(!fread(&code, 1, 1, f)) return 0;
+
+	if(code == 0xF9){
+		 if(!xgif_skip_blockchain(f)) return 0;
+	}else{
+		if(!xgif_skip_blockchain(f)) return 0;
+	}
+	return 1;
 }
 
 struct ximg * xgif_load(const char * filename){
@@ -275,7 +287,13 @@ struct ximg * xgif_load(const char * filename){
 	
 	do {
 		if(indicator == ',') {
-			if(xgif_read_fragment(image, f, &header, &state) < 0){
+			if(xgif_read_fragment(image, f, &state) < 0){
+				ximg_free(image);
+				fclose(f);
+				return 0;
+			}
+		}else if(indicator == '!') {
+			if(xgif_read_extension(image, f, &state) < 0){
 				ximg_free(image);
 				fclose(f);
 				return 0;
