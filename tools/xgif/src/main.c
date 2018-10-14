@@ -2,50 +2,79 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ximg/xgif.h>
-#include <ximg/xpal.h>
-#include <ximg/xtranslate.h>
 
-int main(int argc, const char ** argv){
-  if(argc < 2){
-    printf("No file given");
-    return 1;
-  }
-  
-  const char * file = argv[1];
+int help(int ret){
+    puts("Usage: xgif [options] file");
+    puts(" options:");
+    puts("  --id=<n>        - id of a single mapped image or animation with only mapped images");
+    puts("  --output=<file> - the target to create the new file");
+    return ret;
+}
 
-  struct ximg * image = xgif_load(file);
-  if(image){
-    ximg_save(image, "bin/output.ximg");
-
-    struct ximg * raster = ximg_create();
-
-    xtranslate_mapped(image, 0, raster);
-
-    ximg_save(raster, "bin/output.raster.ximg");
-  }
-
-  {
-    struct ximg * raster = ximg_load("bin/source.raster.ximg");
-
-    struct ximg * mapped = ximg_create();
-
-    struct xpal * palette = xpal_get_by_id(mapped, xpal_create(mapped, XPAL_RGB8, 27));
+char * makeoutput(const char * input, const char * extension){
+    int length = strlen(input);
+    while(length > 0 && input[length] != '.') length--;
     
-    struct xpixel pixel;
-
-    for(int r = 0; r < 3; r++){
-      for(int g = 0; g < 3; g++){
-        for(int b = 0; b < 3; b++){
-          pixel.r = (int)(127.5 * r);
-          pixel.g = (int)(127.5 * g);
-          pixel.b = (int)(127.5 * b);
-          xpal_set_rgb(palette,  r * 9 + g * 3 + b, &pixel);
-        }
-      }
+    if(!length) {
+        length = strlen(input);
     }
 
-    xtranslate_raster_with_palette(raster, 0, mapped, 0);
+    char * output = malloc(length + strlen(extension) + 1);
+    memcpy(output, input, length);
+    memcpy(output + length, extension, strlen(extension) + 1);
+    return output;
+}
 
-    ximg_save(mapped, "bin/output.mapped.ximg");
-  }
+int main(int argc, const char ** argv){
+    ximgid_t id = 0;
+    const char * input = 0;
+    const char * output = 0;
+    struct ximg * image;
+
+    if(argc < 2) return help(-4);
+
+    for(int i = 1; i < argc; i++){
+        if(strcmp(argv[i], "--help") == 0){
+            return help(0);
+        }else if(strncmp(argv[i], "--id=", sizeof("--id")) == 0){
+            if(sscanf(argv[i] + sizeof("--id"),"%hu", &id) <= 0){
+                fprintf(stderr, "Argument of id is not a number\n");
+                return -1;
+            }
+        }else if(strncmp(argv[i], "--output=", sizeof("--output")) == 0){
+            output = argv[i] + sizeof("--output");
+        }else if((i+1) == argc){
+            input = argv[i];
+        }else{
+            fprintf(stderr, "Invalid argument %s\n", argv[i]);
+            return -3;
+        }
+    }
+
+    if(image = xgif_load(input)){
+        if(!output) output = makeoutput(input, ".ximg");
+
+        if(!ximg_save(image, output)){
+            fprintf(stderr, "Failed to save %s\n", output);
+            ximg_free(image);
+            return -5;
+        }
+        ximg_free(image);
+    }else if(image = ximg_load(input)){
+        if(!output) output = makeoutput(input, ".bmp");
+
+        if(!xgif_save(image, id, output)){
+            fprintf(stderr, "Failed to save %s\n", output);
+            ximg_free(image);
+            return -6;
+        }
+        
+        ximg_free(image);
+    }else{
+        fprintf(stderr, "Failed to open %s\n", input);
+        ximg_free(image);
+        return -7;
+    }
+    
+    return 0;
 }

@@ -58,4 +58,13 @@ struct xgif_graphic_control {
 	uint8_t transparentIndex;
 };
 
+struct xgif_state {
+	struct {
+		ximgid_t initial;
+		ximgid_t global;
+		ximgid_t active;
+	} palettes;
+	struct xgif_graphic_control control;
+};
+
 #endif

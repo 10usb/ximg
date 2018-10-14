@@ -7,8 +7,30 @@
 #include <compression/lzw.h>
 #include "gif.h"
 
-static inline long xgif_frame_count(FILE * f){
-	return 1;
+static inline long xgif_global_palette_size(struct xgif_header * header){
+	if(header->hasTable) return (1 << (header->tableSize + 1)) * 3;
+	return 0;
+}
+static inline long xgif_local_palette_size(struct xgif_fragment * fragment){
+	if(fragment->hasTable) return (1 << (fragment->tableSize + 1)) * 3;
+	return 0;
+}
+
+static inline long xgif_data_start(struct xgif_header * header){
+	return 6 + sizeof(struct xgif_header) + xgif_global_palette_size(header);
+}
+
+static inline int xgif_skip_blockchain(FILE * f){
+	uint8_t length;
+	do {
+		fread(&length, 1, 1, f);
+
+		if(length > 0){
+			fseek(f, length, SEEK_CUR);
+		}
+	} while(length > 0);
+
+	return length;
 }
 
 static inline int xgif_read_block(FILE * f, void * buffer){
@@ -20,6 +42,70 @@ static inline int xgif_read_block(FILE * f, void * buffer){
 	}
 
 	return length;
+}
+
+static inline long xgif_frame_count(struct xgif_header * header, FILE * f){
+	long original = ftell(f);
+	long count = 0;
+	int delayed = 1; // first image is always delayed
+
+	fseek(f, xgif_data_start(header), SEEK_SET);
+	uint8_t indicator;
+
+	if(!fread(&indicator, 1, 1, f)) goto end;
+	
+	do {
+		if(indicator == ',') {
+			if(delayed){
+				delayed = 0;
+				count++;
+			}
+
+			struct xgif_fragment fragment;
+			if(!fread(&fragment, sizeof(struct xgif_fragment), 1, f)){
+				printf("Failed to read fragment header\n");
+				count = 0;
+				goto end;
+			}
+
+			long palette = xgif_local_palette_size(&fragment);
+			if(palette > 0) fseek(f, palette, SEEK_CUR);
+			
+			xgif_skip_blockchain(f);
+		}else if(indicator == '!') {
+			uint8_t code;
+			if(!fread(&code, 1, 1, f)){
+				printf("Failed to read code\n");
+				count = 0;
+				goto end;
+			}
+			if(code == 0xF9){
+				union {
+					struct xgif_graphic_control control;
+					unsigned char dummy[255];
+				} buffer;
+
+				if(xgif_read_block(f, &buffer) < sizeof(struct xgif_graphic_control)){
+					if(buffer.control.delay > 0) delayed = 1;
+				}
+			}
+			xgif_skip_blockchain(f);
+		}else {
+			printf("Unexpected indicator 0x%X @ %d\n", indicator, ftell(f) - 1);
+			count = 0;
+			goto end;
+		}
+
+		if(!fread(&indicator, 1, 1, f)){
+			printf("Failed to read next indicator\n");
+			count = 0;
+			goto end;
+		}
+	}while(indicator != ';');
+
+	end:
+	fseek(f, original, SEEK_SET);
+	return count;
 }
 
 static inline ximgid_t xgif_read_palette(struct ximg * image, FILE * f, int size){
@@ -37,6 +123,88 @@ static inline ximgid_t xgif_read_palette(struct ximg * image, FILE * f, int size
 	return id;
 }
 
+static inline int xgif_read_fragment(struct ximg * image, FILE * f, struct xgif_header * header, struct xgif_state * state){
+	struct xgif_fragment fragment;
+	if(!fread(&fragment, sizeof(struct xgif_fragment), 1, f)){
+		printf("Failed to read image\n");
+		return 0;
+	}
+
+	printf("left           : %d\n", fragment.left);
+	printf("top            : %d\n", fragment.top);
+	printf("width          : %d\n", fragment.width);
+	printf("height         : %d\n", fragment.height);
+	printf("hasTable       : %d\n", fragment.hasTable);
+	printf("interlaced     : %d\n", fragment.interlaced);
+	printf("sortFlag       : %d\n", fragment.sortFlag);
+	printf("tableSize      : %d\n", 1 << (fragment.tableSize + 1));
+	printf("reserved       : %d\n", fragment.reserved);
+	printf("minimumCodeSize: %d\n", fragment.minimumCodeSize);
+	printf("-------------------\n");
+
+	if(fragment.hasTable){
+		state->palettes.active = xgif_read_palette(image, f, 1 << (fragment.tableSize + 1));
+		if(!state->palettes.active){
+			printf("Failed to read palette\n");
+			return -1;
+		}
+	}else if(state->palettes.global){
+		state->palettes.active = state->palettes.global;
+	}else if(state->palettes.initial){
+		state->palettes.active = state->palettes.initial;
+	}
+
+	unsigned int mapped = xmap_create_with_palette(image, header->width, header->height, state->palettes.active);
+	if(!mapped){
+		printf("Failed to craate mapped\n");
+		return -1;
+	}
+
+	struct xchan * channel = xmap_channel(image, xmap_get_by_id(image, mapped));
+
+	struct lzw_info info;
+	info.count  = 1 << fragment.minimumCodeSize;
+	info.clear  = info.count;
+	info.stop   = info.clear + 1;
+	lzw_init(&info);
+
+	int codes = 0;
+
+	int length;
+	uint8_t buffer[255];
+	while((length = xgif_read_block(f, &buffer)) > 0){
+		if(length < 0){
+			printf("Failed to read block\n");
+			return -1;
+		}
+
+		int decoded;
+		for(int i = 0; i < length; i++){
+			if(lzw_decode(&info, buffer[i], &decoded) < 0){
+				printf("Failed to decode stream\n");
+				return -1;
+			}
+
+			if(decoded > 0){
+				for(int i = 0; i < decoded; i++){
+					int code = info.codes[i];
+
+					for(int j = 0; j < info.entries[code].length; j++){
+						int x = codes % fragment.width, y = codes / fragment.width;
+						xchan_set8(channel, fragment.left + x, y, info.entries[code].value[j]);
+						codes++;
+					}
+				}
+			}
+		}
+	}
+	
+	printf("\n-------------------\n");
+	printf("codes: %d\n", codes);
+	printf("-------------------\n");
+
+	lzw_free(&info);
+}
 
 struct ximg * xgif_load(const char * filename){
 	FILE * f = fopen(filename, "rb");
@@ -72,18 +240,19 @@ struct ximg * xgif_load(const char * filename){
 		return 0;
 	}
 
-	ximgid_t globalPalette = 0;
+	struct xgif_state state;
+	memset(&state, 0, sizeof(struct xgif_state));
 
 	if(header.hasTable){
-		globalPalette = xgif_read_palette(image, f, 1 << (header.tableSize + 1));
-		if(!globalPalette){
+		state.palettes.global = xgif_read_palette(image, f, 1 << (header.tableSize + 1));
+		if(!state.palettes.global){
 			ximg_free(image);
 			fclose(f);
 			return 0;
 		}
 	}
 
-	long frames = xgif_frame_count(f);
+	long frames = xgif_frame_count(&header, f);
 	if(frames == 0){
 		ximg_free(image);
 		fclose(f);
@@ -91,7 +260,7 @@ struct ximg * xgif_load(const char * filename){
 	}
 
 	if(frames > 1){
-		printf("Animated GIF's not yet supported");
+		printf("Animated GIF's not yet supported\n");
 		ximg_free(image);
 		fclose(f);
 		return 0;
@@ -99,104 +268,32 @@ struct ximg * xgif_load(const char * filename){
 
 	char indicator;
 	if(!fread(&indicator, 1, 1, f)){
-		printf("Failed to read image");
-		fclose(f);
-		return 0;
-	}
-
-	if(indicator != ',') {
-		printf("indicator mis match");
-		fclose(f);
-		return 0;
-	}
-
-	struct xgif_fragment fragment;
-	if(!fread(&fragment, sizeof(struct xgif_fragment), 1, f)){
-		printf("Failed to read image");
-		fclose(f);
-		return 0;
-	}
-	printf("left           : %d\n", fragment.left);
-	printf("top            : %d\n", fragment.top);
-	printf("width          : %d\n", fragment.width);
-	printf("height         : %d\n", fragment.height);
-	printf("hasTable       : %d\n", fragment.hasTable);
-	printf("interlaced     : %d\n", fragment.interlaced);
-	printf("sortFlag       : %d\n", fragment.sortFlag);
-	printf("tableSize      : %d\n", 1 << (fragment.tableSize + 1));
-	printf("reserved       : %d\n", fragment.reserved);
-	printf("minimumCodeSize: %d\n", fragment.minimumCodeSize);
-	printf("-------------------\n");
-
-	unsigned int palette;
-	if(fragment.hasTable){
-		palette = xgif_read_palette(image, f, 1 << (fragment.tableSize + 1));
-		if(!palette){
-			printf("Failed to read palette");
-			ximg_free(image);
-			fclose(f);
-			return 0;
-		}
-	}else{
-		palette = globalPalette;
-	}
-
-	unsigned int mapped = xmap_create_with_palette(image, header.width, header.height, palette);
-	if(!mapped){
-		printf("Failed to craate mapped");
 		ximg_free(image);
 		fclose(f);
 		return 0;
 	}
-
-	struct xchan * channel = xmap_channel(image, xmap_get_by_id(image, mapped));
-
-	struct lzw_info info;
-	info.count  = 1 << fragment.minimumCodeSize;
-	info.clear  = info.count;
-	info.stop   = info.clear + 1;
-	lzw_init(&info);
-
-	int codes = 0;
-
-	int length;
-	unsigned char buffer[255];
-	while((length = xgif_read_block(f, &buffer)) > 0){
-		if(length < 0){
-			printf("Failed to read block");
+	
+	do {
+		if(indicator == ',') {
+			if(xgif_read_fragment(image, f, &header, &state) < 0){
+				ximg_free(image);
+				fclose(f);
+				return 0;
+			}
+		}else{
+			printf("indicator mis match\n");
 			ximg_free(image);
 			fclose(f);
 			return 0;
 		}
 
-		int decoded;
-		for(int i = 0; i < length; i++){
-			if(lzw_decode(&info, buffer[i], &decoded) < 0){
-				printf("Failed to decode stream");
-				ximg_free(image);
-				fclose(f);
-				return 0;
-			}
-
-			if(decoded > 0){
-				for(int i = 0; i < decoded; i++){
-					int code = info.codes[i];
-
-					for(int j = 0; j < info.entries[code].length; j++){
-						int x = codes % fragment.width, y = codes / fragment.width;
-						xchan_set8(channel, fragment.left + x, y, info.entries[code].value[j]);
-						codes++;
-					}
-				}
-			}
+		if(!fread(&indicator, 1, 1, f)){
+			ximg_free(image);
+			fclose(f);
+			return 0;
 		}
-	}
-	
-	printf("\n-------------------\n");
-	printf("codes: %d\n", codes);
-	printf("-------------------\n");
+	}while(indicator != ';');
 
-	lzw_free(&info);
 	fclose(f);
 
    	return image;
