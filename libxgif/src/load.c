@@ -91,7 +91,7 @@ static inline long xgif_frame_count(struct xgif_header * header, FILE * f){
 			}
 			xgif_skip_blockchain(f);
 		}else {
-			printf("Unexpected indicator 0x%X @ %d\n", indicator, ftell(f) - 1);
+			printf("Unexpected indicator 0x%X @ %X\n", indicator, ftell(f) - 1);
 			count = 0;
 			goto end;
 		}
@@ -199,9 +199,9 @@ static inline int xgif_read_fragment(struct ximg * image, FILE * f, struct xgif_
 		}
 	}
 	
-	printf("\n-------------------\n");
-	printf("codes: %d\n", codes);
-	printf("-------------------\n");
+	// printf("\n-------------------\n");
+	// printf("codes: %d\n", codes);
+	// printf("-------------------\n");
 
 	lzw_free(&info);
 }
@@ -246,6 +246,10 @@ struct ximg * xgif_load(const char * filename){
 	printf("pixelRatio     : %d\n", header.pixelRatio);
 	printf("-------------------\n");
 
+	if(!header.hasTable){
+		// detect corrupt header, and try to fix it
+	}
+
     struct ximg * image = ximg_create();
 	if(!image) {
 		fclose(f);
@@ -265,18 +269,20 @@ struct ximg * xgif_load(const char * filename){
 	}
 
 	long frames = xgif_frame_count(&header, f);
+	printf("frames     : %d\n", frames);
+
 	if(frames == 0){
 		ximg_free(image);
 		fclose(f);
 		return 0;
 	}
 
-	if(frames > 1){
-		printf("Animated GIF's not yet supported\n");
-		ximg_free(image);
-		fclose(f);
-		return 0;
-	}
+	// if(frames > 1){
+	// 	printf("Animated GIF's not yet supported\n");
+	// 	ximg_free(image);
+	// 	fclose(f);
+	// 	return 0;
+	// }
 
 	char indicator;
 	if(!fread(&indicator, 1, 1, f)){
@@ -285,8 +291,10 @@ struct ximg * xgif_load(const char * filename){
 		return 0;
 	}
 	
+	int frame = 0;
 	do {
 		if(indicator == ',') {
+			printf("frame          : %d\n", frame++);
 			if(xgif_read_fragment(image, f, &state) < 0){
 				ximg_free(image);
 				fclose(f);

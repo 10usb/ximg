@@ -62,6 +62,8 @@ static inline unsigned char * lzw_buffer(struct lzw_info * info){
 }
 
 static inline int lzw_add(struct lzw_info * info, unsigned char next){
+  if(info->next >= 4096) return info->next;
+
   struct lzw_entry * lastCode = &info->entries[info->lastCode];
   unsigned char * buffer = lzw_buffer(info);  
   memcpy(buffer, lastCode->value, lastCode->length);
@@ -83,14 +85,19 @@ int lzw_get_code(struct lzw_info * info, int code, void * buffer){
 }
 
 static inline int lzw_bits(struct lzw_info * info){
-  register int bits = 1, x = info->next - 1;
+  // Make it optional then next could be -1 for more compact encoding
+  register int bits = 1, x = info->next;
   while (x >>= 1) bits++;
   return bits;
 }
 
 int lzw_decode(struct lzw_info * info, uint8_t data, int * count){
   // Store the new data and the end of the buffer
-  info->buffer[(info->offset + info->length) / 8] = data;
+  int index = (info->offset + info->length) / 8;
+  if(index > 3){
+    return -1;
+  }
+  info->buffer[index] = data;
 
   // Move length by 8
   info->length+= 8;
@@ -99,20 +106,21 @@ int lzw_decode(struct lzw_info * info, uint8_t data, int * count){
   
   int bits;
   while(info->length >= (bits = lzw_bits(info))){
-    int code;
+    unsigned int code;
 
     // Ooh fuck it, just assume little endian, big endian will be done later
-    int mask = ((1 << bits) - 1);
+    unsigned int mask = ((1 << bits) - 1);
     code = *(int*)(&info->buffer);
     code = code >> info->offset;
     code = code & mask;
 
-    if(code == info->stop) return 0;
+    if(code == info->stop){
+      return 0;
+    }
 
     if(code == info->clear){
       lzw_clear(info);
     }else{
-
       if(info->lastCode >= 0){
         if(code < info->next){
           unsigned char next = info->entries[code].value[0];
@@ -122,7 +130,7 @@ int lzw_decode(struct lzw_info * info, uint8_t data, int * count){
         }else if(code == info->next){
           lzw_add(info, info->entries[info->lastCode].value[0]);
         }else{
-          printf("Invalid code %d >= %d\n", code, info->next);
+          //printf("Invalid code %d > %d (l:%d o:%d) %d\n", code, info->next, info->length, info->offset, mask);
           return -1;
         }
       }
@@ -138,7 +146,7 @@ int lzw_decode(struct lzw_info * info, uint8_t data, int * count){
     while(info->offset >= 8){
       info->buffer[0] = info->buffer[1];
       info->buffer[1] = info->buffer[2];
-      info->buffer[2] = info->buffer[3];
+      info->buffer[2] = 0;
       info->offset-= 8;
     }
   }
