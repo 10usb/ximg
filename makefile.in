@@ -1,4 +1,8 @@
-CC=gcc
+ifeq ($(OS),Windows_NT)
+    CC=gcc -mno-ms-bitfields
+else
+	CC=gcc
+endif
 LD=ld
 RM=rm -rf
 ROOT=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))
