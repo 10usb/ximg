@@ -238,7 +238,8 @@ static inline int xgif_read_extension(struct ximg * image, FILE * f, struct xgif
 		printf("transparent      %d\n", control.transparent);
 		printf("delay            %d\n", control.delay);
 		printf("transparentIndex %d\n", control.transparentIndex);
-
+		
+		memcpy(&state->control, &control, sizeof(struct xgif_graphic_control));
 
 		if(read > 0 && !xgif_skip_blockchain(f)) return 0;
 	}else{

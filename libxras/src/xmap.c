@@ -54,9 +54,10 @@ int xmap_get_transparent(struct ximg * image, ximgid_t id, uint16_t * index){
     struct xchu * chunk = ximg_get(image, id);
     if(!chunk) return 0;
     if(chunk->type != ximg_make("XMAP")) return 0;
-    if(chunk->size != sizeof(struct xmap) + sizeof(uint16_t)) return 0;
+    if(chunk->size - sizeof(struct xchu) != sizeof(struct xmap) + sizeof(uint16_t)) return 0;
 
-    *index = *((uint16_t*)(xchu_contents(chunk) + sizeof(struct xmap)));
+    uint16_t * ptr = xchu_contents(chunk) + sizeof(struct xmap);
+    *index = *ptr;
     return 1;
 }
 
@@ -64,8 +65,9 @@ int xmap_set_transparent(struct ximg * image, ximgid_t id, uint16_t index){
     struct xchu * chunk = ximg_get(image, id);
     if(!chunk) return 0;
     if(chunk->type != ximg_make("XMAP")) return 0;
-    if(chunk->size != sizeof(struct xmap) + sizeof(uint16_t)) return 0;
+    if(chunk->size - sizeof(struct xchu) != sizeof(struct xmap) + sizeof(uint16_t)) return 0;
 
-    *((uint16_t*)(xchu_contents(chunk) + sizeof(struct xmap))) = index;
+    uint16_t * ptr = xchu_contents(chunk) + sizeof(struct xmap);
+    *ptr = index;
     return 1;
 }
