@@ -1,11 +1,11 @@
 #include <ximg/xmap.h>
 #include <stdio.h>
 
-ximgid_t xmap_create(struct ximg * image, uint16_t width, uint16_t height, uint16_t type, uint16_t colors){
+ximgid_t xmap_create(struct ximg * image, uint16_t width, uint16_t height, uint16_t type, uint16_t colors, int transparent){
     return 0;
 }
 
-ximgid_t xmap_create_with_palette(struct ximg * image, uint16_t width, uint16_t height, ximgid_t palette){
+ximgid_t xmap_create_with_palette(struct ximg * image, uint16_t width, uint16_t height, ximgid_t palette, int transparent){
     struct xpal * pal = xpal_get_by_id(image, palette);
     if(!pal) return 0;
 
@@ -14,7 +14,7 @@ ximgid_t xmap_create_with_palette(struct ximg * image, uint16_t width, uint16_t 
         bits = 16;
     }
 
-    ximgid_t id = ximg_add(image, sizeof(struct xmap), ximg_make("XMAP"));
+    ximgid_t id = ximg_add(image, transparent ? sizeof(struct xmap) + sizeof(uint16_t): sizeof(struct xmap), ximg_make("XMAP"));
     if(!id) return 0;
 
     struct xmap * map = xmap_get_by_id(image, id);
@@ -48,4 +48,24 @@ struct xchan * xmap_channel(struct ximg * image, struct xmap * mapped){
     if(!chunk) return 0;
     if(chunk->type != ximg_make("XCHA")) return 0;
     return xchu_contents(chunk);
+}
+
+int xmap_get_transparent(struct ximg * image, ximgid_t id, uint16_t * index){
+    struct xchu * chunk = ximg_get(image, id);
+    if(!chunk) return 0;
+    if(chunk->type != ximg_make("XMAP")) return 0;
+    if(chunk->size != sizeof(struct xmap) + sizeof(uint16_t)) return 0;
+
+    *index = *((uint16_t*)(xchu_contents(chunk) + sizeof(struct xmap)));
+    return 1;
+}
+
+int xmap_set_transparent(struct ximg * image, ximgid_t id, uint16_t index){
+    struct xchu * chunk = ximg_get(image, id);
+    if(!chunk) return 0;
+    if(chunk->type != ximg_make("XMAP")) return 0;
+    if(chunk->size != sizeof(struct xmap) + sizeof(uint16_t)) return 0;
+
+    *((uint16_t*)(xchu_contents(chunk) + sizeof(struct xmap))) = index;
+    return 1;
 }

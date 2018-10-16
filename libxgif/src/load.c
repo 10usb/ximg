@@ -154,10 +154,14 @@ static inline int xgif_read_fragment(struct ximg * image, FILE * f, struct xgif_
 		state->palettes.active = state->palettes.initial;
 	}
 
-	ximgid_t mapped = xmap_create_with_palette(image, fragment.width, fragment.height, state->palettes.active);
+	ximgid_t mapped = xmap_create_with_palette(image, fragment.width, fragment.height, state->palettes.active, state->control.transparent);
 	if(!mapped){
 		printf("Failed to craate mapped\n");
 		return -1;
+	}
+
+	if(state->control.transparent){
+		xmap_set_transparent(image, mapped, state->control.transparentIndex);
 	}
 
 	struct xchan * channel = xmap_channel(image, xmap_get_by_id(image, mapped));
