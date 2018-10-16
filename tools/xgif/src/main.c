@@ -26,6 +26,8 @@ char * makeoutput(const char * input, const char * extension){
 }
 
 int main(int argc, const char ** argv){
+    setbuf(stdout, 0);
+    
     ximgid_t id = 0;
     const char * input = 0;
     const char * output = 0;

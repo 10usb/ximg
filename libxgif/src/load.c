@@ -134,6 +134,7 @@ static inline int xgif_read_fragment(struct ximg * image, FILE * f, struct xgif_
 	printf("top            : %d\n", fragment.top);
 	printf("width          : %d\n", fragment.width);
 	printf("height         : %d\n", fragment.height);
+	
 	printf("hasTable       : %d\n", fragment.hasTable);
 	printf("interlaced     : %d\n", fragment.interlaced);
 	printf("sortFlag       : %d\n", fragment.sortFlag);
@@ -215,7 +216,31 @@ static inline int xgif_read_extension(struct ximg * image, FILE * f, struct xgif
 	if(!fread(&code, 1, 1, f)) return 0;
 
 	if(code == 0xF9){
-		 if(!xgif_skip_blockchain(f)) return 0;
+		printf("Extension: F9 %d\n", sizeof(struct xgif_graphic_control));
+		struct xgif_graphic_control control;
+		uint8_t buffer[255];
+		void * ptr;
+		int length = 0, read, count;
+		// In theory it should read 4 bytes and then find a terminator, don't assume that
+		while((read = xgif_read_block(f, &buffer)) > 0){
+			ptr = &control;
+			ptr+= length;
+			count = sizeof(struct xgif_graphic_control) - length;
+			if(read < count) count = read;
+			memcpy(ptr, buffer, read);
+			length += read;
+		}
+		if(length < sizeof(struct xgif_graphic_control)) return 0;
+
+		printf("flags            %d\n", control.flags);
+		printf("disposalMethod   %d\n", control.disposalMethod);
+		printf("userInput        %d\n", control.userInput);
+		printf("transparent      %d\n", control.transparent);
+		printf("delay            %d\n", control.delay);
+		printf("transparentIndex %d\n", control.transparentIndex);
+
+
+		if(read > 0 && !xgif_skip_blockchain(f)) return 0;
 	}else{
 		if(!xgif_skip_blockchain(f)) return 0;
 	}
@@ -242,17 +267,14 @@ struct ximg * xgif_load(const char * filename){
 	
 	printf("width          : %d\n", header.width);
 	printf("height         : %d\n", header.height);
+	printf("flags          : %d\n", header.flags);
 	printf("hasTable       : %d\n", header.hasTable);
-	printf("colorResolution: %d\n", header.colorResolution);
+	printf("colorResolution: %d\n", header.colorResolution + 1);
 	printf("sortFlag       : %d\n", header.sortFlag);
 	printf("tableSize      : %d\n", 1 << (header.tableSize + 1));
 	printf("backgroundIndex: %d\n", header.backgroundIndex);
 	printf("pixelRatio     : %d\n", header.pixelRatio);
 	printf("-------------------\n");
-
-	if(!header.hasTable){
-		// detect corrupt header, and try to fix it
-	}
 
     struct ximg * image = ximg_create();
 	if(!image) {
