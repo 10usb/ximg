@@ -1,12 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-int action_info(int argc, const char ** argv);
-int action_append(int argc, const char ** argv);
-int action_extract(int argc, const char ** argv);
-int action_remove(int argc, const char ** argv);
-int action_translate(int argc, const char ** argv);
+#include "main.h"
 
 int help(int ret){
     puts("Usage: ximg <action> [parameters]");
@@ -44,4 +36,23 @@ int main(int argc, const char ** argv){
     }
 
     return 0;
+}
+
+
+char * makename(const char * source, const char * extension){
+    char * name = strcpy(malloc(strlen(source) + strlen(extension) + 1), source);
+    char * tail = name + strlen(name) - 1;
+
+    while(tail > name){
+        if(*tail == '\\' || *tail == '/') break;
+        if(*tail == '.'){
+            *tail = 0;
+            break;
+        }
+        tail--;
+    }
+
+    strcpy(name + strlen(name), extension);
+
+    return name;
 }

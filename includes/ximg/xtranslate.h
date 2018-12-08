@@ -10,11 +10,11 @@
 /**
  * Translates a mapped image into a raster image
  * @param src   source image to get the mapped image data
- * @param index index of the mapped image
+ * @param id    id of the mapped image
  * @param dest  destination image to insert raster image
  * @return      id of the raster image
  */
-ximgid_t xtranslate_mapped(struct ximg * src, uint16_t index, struct ximg * dest);
+ximgid_t xtranslate_mapped(struct ximg * src, ximgid_t id, struct ximg * dest);
 
 /**
  * Translates a raster image into a mapped image

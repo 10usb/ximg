@@ -28,15 +28,15 @@ static inline void copy_mapped_rgb8(struct xchan * data, struct xpal * palette, 
  *  - get the pixel or vector data
  *  - store it in the raster image
  */
-ximgid_t xtranslate_mapped(struct ximg * src, uint16_t index, struct ximg * dest){
-    struct xmap * mapped = xmap_get_by_index(src, index);
+ximgid_t xtranslate_mapped(struct ximg * src, ximgid_t id, struct ximg * dest){
+    struct xmap * mapped = xmap_get_by_id(src, id);
 
     struct xchan * data = xmap_channel(src, mapped);
     struct xpal * palette =  xmap_palette(src, mapped);
 
-    ximgid_t id = xras_create(dest, data->width, data->height, palette->type, 0);
+    ximgid_t raster_id = xras_create(dest, data->width, data->height, palette->type, 0);
 
-    struct xras * raster = xras_get_by_id(dest, id);
+    struct xras * raster = xras_get_by_id(dest, raster_id);
 
     switch(palette->type){
         case XPIXEL_RGB8: copy_mapped_rgb8(data, palette, dest, raster); break;
