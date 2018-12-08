@@ -10,16 +10,16 @@ int action_translate(int argc, const char ** argv);
 
 int help(int ret){
     puts("Usage: ximg <action> [parameters]");
-    puts(" actions:");
-    puts("  info <file> [options]");
-    puts("  append <output> <input> [options]");
-    puts("  extract <input> <output> [options]");
-    puts("  remove <input> [options]");
-    puts("  translate <input> <output> [options]");
-    puts("  help");
+    puts("  actions:");
+    puts("    info      - shows info from the file");
+    puts("    append    - append content from one file into an other");
+    puts("    extract   - extract content from a ximg file");
+    puts("    remove    - remove content from a ximg file");
+    puts("    translate - translate a raster image to/from a mapped image");
+    puts("    help      - show this help");
     puts("");
-    puts(" for info per action use:");
-    puts("  ximg <action> --help");
+    puts("  for info per action use:");
+    puts("    ximg <action> --help");
     return ret;
 }
 
@@ -36,6 +36,8 @@ int main(int argc, const char ** argv){
         return action_extract(argc, argv);
     }else if(strcmp(argv[1], "remove") == 0){
         return action_remove(argc, argv);
+    }else if(strcmp(argv[1], "translate") == 0){
+        return action_translate(argc, argv);
     }else{
         fprintf(stderr, "Invalid action '%s'\n", argv[1]);
         return -2;
