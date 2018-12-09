@@ -76,7 +76,7 @@ if(image){
 
 ## Wishes to be added
  - Full Bitmap support
- - Conversion of 24bit to an mapped color image using dithering
+ - Dynamic pallete generation
  - Animated GIF
  - Loading and saving of Portable Network Graphics (.png)
  - Loading of Joint Photographic Experts Group (.jpeg, .jpg)
