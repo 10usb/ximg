@@ -40,4 +40,6 @@ int xpal_set_rgb(struct xpal * palette, uint16_t index, struct xpixel * pixel);
 int xpal_set_rgba(struct xpal * palette, uint16_t index, struct xpixel * pixel);
 int xpal_set_vector(struct xpal * palette, uint16_t index, struct xvector * vector);
 int xpal_set_vector1(struct xpal * palette, uint16_t index, struct xvector * vector);
+
+uint16_t xpal_match_rgb(struct xpal * palette, struct xpixel * pixel);
 #endif

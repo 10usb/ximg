@@ -1,7 +1,7 @@
 # Ximg converter
 include ../../makefile.in
 OUTPUT=bin/ximg
-SOURCES=main.c
+SOURCES=main.c info.c append.c extract.c remove.c translate.c
 DEPENDANCIES=libximg libxras
 TEMP=obj
 OBJECTS=$(SOURCES:%.c=$(TEMP)/%.o)

@@ -1,4 +1,5 @@
 #include <ximg/xpal.h>
+#include <stdlib.h>
 
 ximgid_t xpal_create(struct ximg * image, ximgtype_t type, uint16_t size){
     ximgid_t id = ximg_add(image, xpal_size(type, size), ximg_make("XPAL"));
@@ -139,4 +140,25 @@ int xpal_set_vector1(struct xpal * palette, uint16_t index, struct xvector * vec
     }
 
     return 0;
+}
+
+uint16_t xpal_match_rgb(struct xpal * palette, struct xpixel * pixel){
+    uint16_t best_index = 0;
+    int best_error = 255 + 255 + 255 + 1, error;
+    struct xpixel color;
+
+    for(uint16_t index = 0; index < palette->size; index++){
+        xpal_get_rgb(palette, index, &color);
+
+        error = abs(((int)color.r) - ((int)pixel->r))
+              + abs(((int)color.g) - ((int)pixel->g))
+              + abs(((int)color.b) - ((int)pixel->b));
+
+        if(error < best_error){
+            best_error = error;
+            best_index = index;
+        }
+    }
+
+    return best_index;
 }
